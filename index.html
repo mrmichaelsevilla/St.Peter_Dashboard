@@ -1202,6 +1202,51 @@
 
   .rng-empty-hint { color: rgba(255,255,255,0.35); font-size: 13px; font-style: italic; }
 
+
+
+  /* ── AGENT MANAGEMENT ── */
+  .agent-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    background: var(--off-white);
+  }
+  .agent-manager-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--white);
+    border: 1px solid var(--gray-100);
+  }
+  .agent-manager-name { font-weight: 700; color: var(--dark-green); font-size: 13px; }
+  .agent-manager-actions { display:flex; gap:8px; align-items:center; }
+  .btn-danger-small {
+    background: #fde8e8;
+    color: var(--danger);
+    border: 1px solid #f5baba;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+  }
+  .btn-danger-small:hover { background: var(--danger); color: var(--white); }
+  .agent-manager-help {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
   /* ── PRINT ── */
   @media print {
     .controls-bar, .btn-primary, .btn-gold, .btn-outline { display: none !important; }
@@ -1677,6 +1722,7 @@
     <button class="month-btn" data-month="10">November</button>
     <button class="month-btn" data-month="11">December</button>
     <div class="controls-spacer"></div>
+    <button class="btn-outline" id="btn-manage-agents">👥 Manage Agents</button>
     <button class="btn-gold" id="btn-add-entry">＋ Add / Edit Sales Entry</button>
     <button class="btn-primary" id="btn-print" onclick="window.print()">🖨 Print Report</button>
   </div>
@@ -1858,6 +1904,30 @@
   </div>
 </div>
 
+<!-- AGENT MANAGEMENT MODAL -->
+<div class="modal-overlay" id="agent-manager-overlay" style="display:none;">
+  <div class="modal" style="width:560px;">
+    <div class="modal-title">Agent Management</div>
+    <div class="modal-sub">Add new agents or remove inactive agents from the active leaderboard list.</div>
+
+    <div class="form-group">
+      <label class="form-label">New Agent Name</label>
+      <input class="form-input" type="text" id="agent-new-name" placeholder="Type full agent name" />
+    </div>
+    <button class="btn-gold" id="btn-agent-add" style="width:100%;justify-content:center;">＋ Add Agent</button>
+
+    <div class="form-group" style="margin-top:18px;">
+      <label class="form-label">Active Agents</label>
+      <div class="agent-manager-list" id="agent-manager-list"></div>
+      <div class="agent-manager-help">Removing an agent hides them from new sales entry and the active leaderboard list. Existing sales records remain saved in Supabase. To confirm removal, you must type <strong>REMOVE</strong>.</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" id="btn-agent-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- SALES DETAIL POPUP -->
 <div class="modal-overlay" id="detail-overlay" style="display:none;">
   <div class="modal" style="width:520px;">
@@ -1995,7 +2065,7 @@ function planSelectOptions(includePlaceholder = true) {
 const PLAN_COLORS = { A: '#1a5fa8', B: '#905c0a', C: '#3b6d11', D: '#a32d2d' };
 const PLAN_BG     = { A: '#e3f0fe', B: '#fdf0dc', C: '#eaf3de', D: '#f9e5e5' };
 
-const AGENTS = [
+const DEFAULT_AGENTS = [
   'Angelita Aldepolla','Ann Pumar','Anna Lou Masong','Benjun Najarro Jr.',
   'Boss D Catz','Boss D Vlog','Donner Ric Gonzalez Bitor','Edna Jacalan',
   'Elena Dignos Samosa','Emma Gallardo','Eva Marie Pedaria Barriga','Felix Perolino',
@@ -2005,6 +2075,24 @@ const AGENTS = [
   'Nora Nuñez Allanic','Palangga Baring','Ramon Roa Guerra','Risa V Ygoña',
   'Sayson Felipa'
 ];
+
+let AGENTS = [...DEFAULT_AGENTS];
+try {
+  const storedAgents = JSON.parse(localStorage.getItem('stpeter_agents_v1') || 'null');
+  if (Array.isArray(storedAgents) && storedAgents.length) AGENTS = storedAgents;
+} catch(e) {}
+
+function normalizeAgentName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ');
+}
+function sortAgents() {
+  AGENTS = [...new Set(AGENTS.map(normalizeAgentName).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+}
+function saveAgentsLocal() {
+  sortAgents();
+  try { localStorage.setItem('stpeter_agents_v1', JSON.stringify(AGENTS)); } catch(e) {}
+}
+sortAgents();
 
 // salesData[month][agentName] = { plan: 'A', weeks: [0,0,0,0,0] }
 let salesData = {};
@@ -2044,6 +2132,40 @@ async function loadSalesFromSupabase() {
     entry.weeks = entry.sales.map(x => x.length);
   });
   saveData();
+}
+
+
+async function loadAgentsFromSupabase() {
+  if (!db) return;
+  const { data, error } = await db.from('agents').select('agent_name,is_active').eq('is_active', true).order('agent_name', { ascending: true });
+  if (error) { console.warn('Agents table not loaded; using local/default agents.', error); saveAgentsLocal(); return; }
+  if (Array.isArray(data) && data.length) {
+    AGENTS = data.map(r => normalizeAgentName(r.agent_name)).filter(Boolean);
+    saveAgentsLocal();
+  } else {
+    await seedDefaultAgentsToSupabase();
+  }
+}
+
+async function seedDefaultAgentsToSupabase() {
+  if (!db) return;
+  const rows = DEFAULT_AGENTS.map(name => ({ agent_name: name, is_active: true }));
+  const { error } = await db.from('agents').upsert(rows, { onConflict: 'agent_name', ignoreDuplicates: true });
+  if (error) console.warn('Default agents could not be seeded.', error);
+}
+
+async function addAgentToSupabase(name) {
+  if (!db) return true;
+  const { error } = await db.from('agents').upsert({ agent_name: name, is_active: true }, { onConflict: 'agent_name' });
+  if (error) { console.error(error); showToast('⚠️ Could not save agent to Supabase.'); return false; }
+  return true;
+}
+
+async function removeAgentFromSupabase(name) {
+  if (!db) return true;
+  const { error } = await db.from('agents').update({ is_active: false }).eq('agent_name', name);
+  if (error) { console.error(error); showToast('⚠️ Could not remove agent in Supabase.'); return false; }
+  return true;
 }
 
 async function syncWeekToSupabase(month, agent, weekIndex, salesList) {
@@ -2369,6 +2491,8 @@ function updateKPIs() {
   document.getElementById('kpi-top-sales').textContent = (top && top.total > 0 ? top.total : 0) + ' sales';
   document.getElementById('kpi-active').textContent = active;
   document.getElementById('kpi-active-pct').textContent = `of ${AGENTS.length} agents`;
+  const supAgentTotal = document.getElementById('sup-total-agents');
+  if (supAgentTotal) supAgentTotal.textContent = AGENTS.length;
   const totalAmount = sorted.reduce((s,a) => s + (a.amount || 0), 0);
   document.querySelector('#kpi-total').nextElementSibling.textContent = `Amount tracked: ₱${totalAmount.toLocaleString()}`;
 
@@ -2882,6 +3006,73 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) this.style.display = 'none';
 });
 
+
+// ──────────────────────────────────────────────────────────────
+//  AGENT MANAGEMENT
+// ──────────────────────────────────────────────────────────────
+
+function renderAgentManager() {
+  const list = document.getElementById('agent-manager-list');
+  if (!list) return;
+  sortAgents();
+  if (!AGENTS.length) {
+    list.innerHTML = '<div class="bulk-current-empty">No active agents yet. Add one above.</div>';
+    return;
+  }
+  list.innerHTML = AGENTS.map(name => `
+    <div class="agent-manager-row">
+      <div class="agent-manager-name">${name}</div>
+      <div class="agent-manager-actions">
+        <button class="btn-danger-small" data-remove-agent="${name.replace(/"/g, '&quot;')}">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function openAgentManager() {
+  document.getElementById('agent-new-name').value = '';
+  renderAgentManager();
+  document.getElementById('agent-manager-overlay').style.display = 'flex';
+}
+
+document.getElementById('btn-manage-agents').addEventListener('click', openAgentManager);
+document.getElementById('btn-agent-close').addEventListener('click', () => {
+  document.getElementById('agent-manager-overlay').style.display = 'none';
+});
+document.getElementById('agent-manager-overlay').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+document.getElementById('btn-agent-add').addEventListener('click', async () => {
+  const input = document.getElementById('agent-new-name');
+  const name = normalizeAgentName(input.value);
+  if (!name) { showToast('⚠️ Please type the agent name.'); return; }
+  const exists = AGENTS.some(a => a.toLowerCase() === name.toLowerCase());
+  if (exists) { showToast('⚠️ Agent already exists.'); return; }
+  const ok = await addAgentToSupabase(name);
+  if (!ok) return;
+  AGENTS.push(name);
+  saveAgentsLocal();
+  input.value = '';
+  renderAgentManager();
+  refresh();
+  showToast(`✅ Added agent: ${name}`);
+});
+
+document.getElementById('agent-manager-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-remove-agent]');
+  if (!btn) return;
+  const name = btn.dataset.removeAgent;
+  const typed = prompt(`To remove ${name} from the active agent list, type REMOVE below.`);
+  if (typed !== 'REMOVE') { showToast('Removal cancelled. You must type REMOVE exactly.'); return; }
+  const ok = await removeAgentFromSupabase(name);
+  if (!ok) return;
+  AGENTS = AGENTS.filter(a => a !== name);
+  saveAgentsLocal();
+  renderAgentManager();
+  refresh();
+  showToast(`✅ Removed agent from active list: ${name}`);
+});
+
 // ──────────────────────────────────────────────────────────────
 //  MONTH BUTTONS
 // ──────────────────────────────────────────────────────────────
@@ -3244,6 +3435,7 @@ document.querySelector(`.month-btn[data-month="${currentMonth}"]`).classList.add
 async function initCloudApp() {
   if (cloudEnabled) {
     showToast('☁️ Loading cloud data...');
+    await loadAgentsFromSupabase();
     await loadSalesFromSupabase();
     await loadAnnouncementsFromSupabase();
   }
