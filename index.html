@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="favicon.png">
 <title>St. Peter Life Plan – SA2 Team Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -1752,8 +1753,28 @@
 
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Supabase Cloud Database -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+// ──────────────────────────────────────────────────────────────
+//  SUPABASE CLOUD SETTINGS
+//  Replace the two values below with your own Supabase details.
+//  Never paste the service_role key here. Use anon public / publishable only.
+// ──────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://zxwlqgdftiwrbfzqacpk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4d2xxZ2RmdGl3cmJmenFhY3BrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODAzMDIsImV4cCI6MjA5NTg1NjMwMn0.06i4NfEtygT1h0Oft4cHXpHylXHJ4--_ozU1Cio1ggI';
+const cloudEnabled = SUPABASE_URL.startsWith('https://') && !SUPABASE_ANON_KEY.includes('PASTE_YOUR');
+const db = cloudEnabled ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+}
+function newId() { return crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()); }
+function cloudTime(ts) {
+  return ts ? new Date(ts).toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true }) : annTimestamp();
+}
+
 // ──────────────────────────────────────────────────────────────
 //  DATA MODEL
 // ──────────────────────────────────────────────────────────────
@@ -1800,6 +1821,82 @@ let barChart = null, pieChart = null, lineChart = null;
 
 function saveData() {
   try { localStorage.setItem('stpeter_sales_v2', JSON.stringify(salesData)); } catch(e) {}
+}
+
+async function loadSalesFromSupabase() {
+  if (!db) return;
+  const { data, error } = await db.from('sales_entries').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); showToast('⚠️ Could not load cloud sales. Check Supabase policies.'); return; }
+  salesData = {};
+  (data || []).forEach(row => {
+    const monthIndex = MONTHS.indexOf(row.sales_month);
+    const weekIndex = Number(String(row.sales_week || '').replace(/[^0-9]/g, '')) - 1;
+    if (monthIndex < 0 || weekIndex < 0 || weekIndex > 4) return;
+    if (!salesData[monthIndex]) salesData[monthIndex] = {};
+    if (!salesData[monthIndex][row.agent_name]) salesData[monthIndex][row.agent_name] = { plan:'', freq:'Full Payment', weeks:[0,0,0,0,0], sales:[[],[],[],[],[]] };
+    const entry = salesData[monthIndex][row.agent_name];
+    entry.sales[weekIndex].push({
+      plan: row.plan_type,
+      freq: row.payment_frequency,
+      amount: Number(row.amount) || 0,
+      cloudId: row.id
+    });
+    entry.plan = row.plan_type || entry.plan;
+    entry.freq = row.payment_frequency || entry.freq;
+    entry.weeks = entry.sales.map(x => x.length);
+  });
+  saveData();
+}
+
+async function syncWeekToSupabase(month, agent, weekIndex, salesList) {
+  if (!db || weekIndex === 'total') return;
+  const monthName = MONTHS[month];
+  const weekName = `Week ${Number(weekIndex) + 1}`;
+  const { error: delError } = await db.from('sales_entries')
+    .delete()
+    .eq('sales_month', monthName)
+    .eq('sales_week', weekName)
+    .eq('agent_name', agent);
+  if (delError) { console.error(delError); showToast('⚠️ Cloud delete failed. Check policies.'); return; }
+  const rows = (salesList || []).map(sale => ({
+    sales_month: monthName,
+    sales_week: weekName,
+    agent_name: agent,
+    plan_category: PLANS[normalizePlanKey(sale.plan)]?.type || '',
+    plan_type: normalizePlanKey(sale.plan),
+    payment_frequency: sale.freq,
+    amount: Number(sale.amount) || lookupAmount(sale.plan, sale.freq),
+    quantity: 1
+  }));
+  if (!rows.length) return;
+  const { error } = await db.from('sales_entries').insert(rows);
+  if (error) { console.error(error); showToast('⚠️ Cloud save failed. Check Supabase policies.'); }
+}
+
+async function syncAgentMonthToSupabase(month, agent, salesByWeek) {
+  if (!db) return;
+  const monthName = MONTHS[month];
+  const { error: delError } = await db.from('sales_entries')
+    .delete()
+    .eq('sales_month', monthName)
+    .eq('agent_name', agent);
+  if (delError) { console.error(delError); showToast('⚠️ Cloud delete failed. Check policies.'); return; }
+  const rows = [];
+  (salesByWeek || []).forEach((weekSales, wi) => {
+    (weekSales || []).forEach(sale => rows.push({
+      sales_month: monthName,
+      sales_week: `Week ${wi + 1}`,
+      agent_name: agent,
+      plan_category: PLANS[normalizePlanKey(sale.plan)]?.type || '',
+      plan_type: normalizePlanKey(sale.plan),
+      payment_frequency: sale.freq,
+      amount: Number(sale.amount) || lookupAmount(sale.plan, sale.freq),
+      quantity: 1
+    }));
+  });
+  if (!rows.length) return;
+  const { error } = await db.from('sales_entries').insert(rows);
+  if (error) { console.error(error); showToast('⚠️ Cloud save failed. Check Supabase policies.'); }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -1990,7 +2087,7 @@ function openDetailPopup(agentName, week) {
   document.getElementById('detail-period-label').textContent = isTotal ? 'Month' : 'Week';
   document.getElementById('detail-period').textContent = isTotal ? MONTHS[currentMonth] : `Week ${week + 1}`;
 
-  document.getElementById('detail-plan').value = normalizePlanKey(entry.plan || '');
+  document.getElementById('detail-plan').value = entry.plan || '';
   document.getElementById('detail-frequency').value = entry.freq || 'Full Payment';
   document.getElementById('detail-entry-panel').style.display = isTotal ? 'none' : 'block';
 
@@ -2049,6 +2146,7 @@ document.getElementById('btn-detail-save').addEventListener('click', () => {
   entry.freq = document.getElementById('detail-frequency').value || entry.sales.flat().slice(-1)[0]?.freq || 'Full Payment';
   saveEntry(currentMonth, agent, entry);
   saveData();
+  syncWeekToSupabase(currentMonth, agent, detailContext.week, entry.sales[detailContext.week]);
 
   document.getElementById('detail-overlay').style.display = 'none';
   showToast(`✅ Saved ${entry.weeks[detailContext.week]} sale(s) for ${agent.split(' ')[0]} — ₱${weekAmount(entry, detailContext.week).toLocaleString()}`);
@@ -2363,6 +2461,7 @@ document.getElementById('btn-modal-save').addEventListener('click', () => {
   });
   saveEntry(month, agent, { plan, freq, weeks, sales });
   saveData();
+  syncAgentMonthToSupabase(month, agent, sales);
 
   document.getElementById('modal-overlay').style.display = 'none';
   showToast(`✅ Saved entry for ${agent.split(' ')[0]} (${MONTHS[month]})`);
@@ -2413,8 +2512,55 @@ try {
 } catch(e) {}
 let editingAnnouncementId = null;
 
+
+let announceSyncTimer = null;
 function saveAnnouncements() {
   try { localStorage.setItem('stpeter_announcements_v2', JSON.stringify(announcements)); } catch(e) {}
+  if (announceSyncTimer) clearTimeout(announceSyncTimer);
+  announceSyncTimer = setTimeout(syncAnnouncementsToSupabase, 400);
+}
+async function loadAnnouncementsFromSupabase() {
+  if (!db) return;
+  const { data: anns, error } = await db.from('announcements').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); showToast('⚠️ Could not load cloud announcements.'); return; }
+  const { data: msgs, error: msgErr } = await db.from('announcement_messages').select('*').order('created_at', { ascending: true });
+  if (msgErr) console.error(msgErr);
+  announcements = (anns || []).map(a => ({
+    id: a.id,
+    type: a.category || 'general',
+    title: a.title || '',
+    message: a.message || '',
+    checklist: a.checklist || '',
+    author: a.posted_by || 'Supervisor Hazel',
+    date: cloudTime(a.created_at),
+    messages: (msgs || []).filter(m => m.announcement_id === a.id).map(m => ({ name: m.sender_name || 'Anonymous', message: m.message || '', time: cloudTime(m.created_at) }))
+  }));
+  try { localStorage.setItem('stpeter_announcements_v2', JSON.stringify(announcements)); } catch(e) {}
+}
+async function syncAnnouncementsToSupabase() {
+  if (!db) return;
+  for (const ann of announcements) {
+    if (!isUuid(ann.id)) continue;
+    const { error } = await db.from('announcements').upsert({
+      id: ann.id,
+      title: ann.title || '',
+      message: ann.message || '',
+      category: ann.type || 'general',
+      posted_by: ann.author || 'Supervisor Hazel',
+      checklist: ann.checklist || ''
+    });
+    if (error) console.error(error);
+  }
+}
+async function deleteAnnouncementFromSupabase(id) {
+  if (!db || !isUuid(id)) return;
+  const { error } = await db.from('announcements').delete().eq('id', id);
+  if (error) console.error(error);
+}
+async function addAnnouncementMessageToSupabase(annId, name, message) {
+  if (!db || !isUuid(annId)) return;
+  const { error } = await db.from('announcement_messages').insert({ announcement_id: annId, sender_name: name, message });
+  if (error) console.error(error);
 }
 function annTimestamp() {
   return new Date().toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
@@ -2475,6 +2621,7 @@ function renderAnnouncements() {
 function deleteAnnouncement(id) {
   const realId = id.replace('ann-', '');
   announcements = announcements.filter(a => String(a.id) !== String(realId));
+  deleteAnnouncementFromSupabase(realId);
   saveAnnouncements(); renderAnnouncements(); showToast('Announcement dismissed.');
 }
 function editAnnouncement(id) {
@@ -2528,7 +2675,7 @@ document.getElementById('btn-ann-save').addEventListener('click', () => {
     showToast('✅ Announcement updated!');
   } else {
     announcements.unshift({
-      id: Date.now(), messages: [], type: document.getElementById('ann-type').value,
+      id: newId(), messages: [], type: document.getElementById('ann-type').value,
       title, message, checklist: document.getElementById('ann-checklist').value,
       author: document.getElementById('ann-author').value || 'Supervisor Hazel', date: annTimestamp()
     });
@@ -2547,6 +2694,7 @@ document.getElementById('btn-msg-send').addEventListener('click', () => {
   if (!ann) return;
   ann.messages = Array.isArray(ann.messages) ? ann.messages : [];
   ann.messages.push({ name, message, time: annTimestamp() });
+  addAnnouncementMessageToSupabase(ann.id, name, message);
   saveAnnouncements(); document.getElementById('message-modal-overlay').style.display = 'none'; renderAnnouncements(); showToast('💬 Message sent with timestamp.');
 });
 
@@ -2606,8 +2754,17 @@ document.getElementById('cutoff-label').textContent = `Cut-off: 5th (or 6th) mon
 document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
 document.querySelector(`.month-btn[data-month="${currentMonth}"]`).classList.add('active');
 
-renderAnnouncements();
-refresh();
+async function initCloudApp() {
+  if (cloudEnabled) {
+    showToast('☁️ Loading cloud data...');
+    await loadSalesFromSupabase();
+    await loadAnnouncementsFromSupabase();
+  }
+  renderAnnouncements();
+  refresh();
+  if (cloudEnabled) showToast('✅ Cloud data loaded.');
+}
+initCloudApp();
 </script>
 </body>
 </html>
