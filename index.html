@@ -726,6 +726,72 @@
   }
   .amount-breakdown strong { display:block; color: var(--gold-light); font-size: 11px; text-transform: uppercase; letter-spacing:.6px; }
 
+
+  .bulk-entry-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 12px;
+  }
+  .bulk-entry-grid.three {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .amount-preview-card {
+    background: linear-gradient(135deg, var(--dark-green), var(--mid-green));
+    color: var(--white);
+    border-left: 4px solid var(--gold);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin: 6px 0 14px;
+  }
+  .amount-preview-card .lbl {
+    color: var(--gold-light);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .amount-preview-card .val {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1.05;
+  }
+  .amount-preview-card .note {
+    font-size: 12px;
+    opacity: .88;
+    margin-top: 4px;
+  }
+  .bulk-current-list {
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: 10px;
+    max-height: 230px;
+    overflow-y: auto;
+    background: var(--white);
+  }
+  .bulk-current-empty {
+    text-align: center;
+    padding: 18px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .bulk-summary-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+  }
+  .bulk-summary-line:last-child { border-bottom: none; }
+  .bulk-summary-line strong { color: var(--dark-green); }
+  .bulk-summary-line span { color: var(--text-muted); font-size: 12px; }
+  @media (max-width: 700px) {
+    .bulk-entry-grid, .bulk-entry-grid.three { grid-template-columns: 1fr; }
+  }
+
   .modal-actions {
     display: flex;
     gap: 10px;
@@ -1312,6 +1378,33 @@
   .announce-message-item { background:var(--off-white); border:1px solid var(--gray-100); border-radius:10px; padding:9px 11px; font-size:12px; }
   .announce-message-item strong { color:var(--dark-green); }
   .announce-message-item .time { color:var(--gray-400); font-size:11px; margin-left:5px; }
+  .form-help { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+  .announce-image-wrap {
+    width: 190px; min-width: 190px; height: 128px; border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md); overflow: hidden; background: var(--off-white); cursor: zoom-in;
+    align-self: center; position: relative; box-shadow: var(--shadow-sm);
+  }
+  .announce-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .announce-image-wrap span {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 5px 7px;
+    font-size: 10px; font-weight: 800; color: var(--white);
+    background: rgba(15,45,28,0.72); text-align: center;
+  }
+  .image-viewer-modal {
+    background: var(--white); border-radius: var(--radius-xl); padding: 14px;
+    max-width: 92vw; max-height: 92vh; box-shadow: var(--shadow-lg); position: relative;
+    border-top: 4px solid var(--gold);
+  }
+  .image-viewer-modal img { max-width: 88vw; max-height: 82vh; display: block; border-radius: var(--radius-md); }
+  .image-viewer-close {
+    position: absolute; top: -14px; right: -14px; width: 34px; height: 34px;
+    border-radius: 50%; border: none; background: var(--danger); color: var(--white);
+    font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-md);
+  }
+  @media (max-width: 760px) {
+    .announce-card { flex-direction: column; }
+    .announce-image-wrap { width: 100%; min-width: 100%; height: 180px; align-self: stretch; }
+  }
 
 </style>
 </head>
@@ -1432,6 +1525,11 @@
         <input class="form-input" id="ann-checklist" type="text" placeholder="e.g. Complete Uniform, ID, Flyers, Forms" />
       </div>
       <div class="form-group">
+        <label class="form-label">Attach Image (optional)</label>
+        <input class="form-input" id="ann-image" type="file" accept="image/png,image/jpeg" />
+        <div class="form-help" id="ann-image-help">Allowed files: .jpg, .jpeg, .png only · Maximum size: 3 MB · One image per announcement.</div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Posted by</label>
         <input class="form-input" id="ann-author" type="text" placeholder="e.g. Supervisor Hazel" value="Supervisor Hazel" />
       </div>
@@ -1460,6 +1558,14 @@
         <button class="btn-outline" id="btn-msg-cancel">Cancel</button>
         <button class="btn-primary" id="btn-msg-send">💬 Send Message</button>
       </div>
+    </div>
+  </div>
+
+  <!-- FULL SIZE ANNOUNCEMENT IMAGE VIEWER -->
+  <div class="modal-overlay" id="image-viewer-overlay" style="display:none;">
+    <div class="image-viewer-modal">
+      <button class="image-viewer-close" id="image-viewer-close" title="Close">×</button>
+      <img id="image-viewer-img" src="" alt="Announcement image full size" />
     </div>
   </div>
 
@@ -1684,46 +1790,65 @@
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" style="display:none;">
-  <div class="modal">
+  <div class="modal" style="width:560px;">
     <div class="modal-title">Sales Entry Form</div>
-    <div class="modal-sub" id="modal-sub-text">Enter weekly sales for an agent.</div>
+    <div class="modal-sub" id="modal-sub-text">Add sales by agent, plan, payment frequency, and week number.</div>
 
     <div class="form-group">
-      <label class="form-label">Agent</label>
+      <label class="form-label">Agent Name</label>
       <select class="form-select" id="modal-agent"></select>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Month</label>
-      <select class="form-select" id="modal-month"></select>
+    <div class="bulk-entry-grid">
+      <div class="form-group">
+        <label class="form-label">Month</label>
+        <select class="form-select" id="modal-month"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Week #</label>
+        <select class="form-select" id="modal-week">
+          <option value="0">Week 1</option>
+          <option value="1">Week 2</option>
+          <option value="2">Week 3</option>
+          <option value="3">Week 4</option>
+          <option value="4">Week 5</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-group">
       <label class="form-label">Plan Type</label>
-      <select class="form-select" id="modal-plan">
-        <option value="">— Select default plan type —</option>
-        <option value="ST_ANNE_5Y">St. Anne (5-Year) — ₱157,500</option>
-        <option value="ST_BERNADETTE_5Y">St. Bernadette (5-Year) — ₱125,000</option>
-        <option value="ST_CLAIRE_5Y">St. Claire (5-Year) — ₱98,500</option>
-        <option value="ST_DOMINIQUE_5Y">St. Dominique (5-Year) — ₱67,500</option>
-        <option value="ST_GREGORY_5Y">St. Gregory (5-Year) — ₱57,000</option>
-        <option value="ST_GEORGE_5Y">St. George (5-Year) — ₱53,000</option>
-        <option value="ST_GREGORY_7Y">St. Gregory (7-Year) — ₱62,000</option>
-        <option value="ST_GEORGE_7Y">St. George (7-Year) — ₱57,000</option>
-        <option value="ST_JUDE_5Y">St. Jude Cremation (5-Year) — ₱99,000</option>
-        <option value="ST_JAMES_5Y">St. James Cremation (5-Year) — ₱66,000</option>
-      </select>
+      <select class="form-select" id="modal-plan"></select>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Weekly Sales</label>
-      <div class="week-input-grid">
-        <div class="week-input-item"><label>Week 1</label><input type="number" id="w1" min="0" value="0" /></div>
-        <div class="week-input-item"><label>Week 2</label><input type="number" id="w2" min="0" value="0" /></div>
-        <div class="week-input-item"><label>Week 3</label><input type="number" id="w3" min="0" value="0" /></div>
-        <div class="week-input-item"><label>Week 4</label><input type="number" id="w4" min="0" value="0" /></div>
-        <div class="week-input-item"><label>Week 5</label><input type="number" id="w5" min="0" value="0" /></div>
+    <div class="bulk-entry-grid">
+      <div class="form-group">
+        <label class="form-label">Frequency</label>
+        <select class="form-select" id="modal-frequency">
+          <option value="Full Payment">Full Payment</option>
+          <option value="Annual">Annual</option>
+          <option value="Semi-Annual">Semi-Annual</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Monthly">Monthly</option>
+        </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Week # Sale Count</label>
+        <input class="form-input" type="number" id="modal-sale-count" min="1" value="1" />
+      </div>
+    </div>
+
+    <div class="amount-preview-card">
+      <div class="lbl">Amount Preview</div>
+      <div class="val" id="modal-amount-preview">₱0</div>
+      <div class="note" id="modal-amount-note">Select a plan and frequency to compute the amount.</div>
+    </div>
+
+    <button class="btn-gold btn-add-sale" id="btn-modal-add-line">＋ Add Sale(s) to Selected Week</button>
+
+    <div class="form-group" style="margin-top:16px;">
+      <label class="form-label">Current Sales for Selected Agent / Month</label>
+      <div class="bulk-current-list" id="modal-current-sales"></div>
     </div>
 
     <div class="modal-actions">
@@ -1823,6 +1948,9 @@ const SUPABASE_URL = 'https://zxwlqgdftiwrbfzqacpk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4d2xxZ2RmdGl3cmJmenFhY3BrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODAzMDIsImV4cCI6MjA5NTg1NjMwMn0.06i4NfEtygT1h0Oft4cHXpHylXHJ4--_ozU1Cio1ggI';
 const cloudEnabled = SUPABASE_URL.startsWith('https://') && !SUPABASE_ANON_KEY.includes('PASTE_YOUR');
 const db = cloudEnabled ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const ANN_IMAGE_BUCKET = 'announcement-images';
+const ANN_IMAGE_MAX_BYTES = 3 * 1024 * 1024; // 3 MB limit for each announcement image
+const ANN_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
@@ -1851,6 +1979,18 @@ const PLANS = {
   'ST_JAMES_5Y':      { label: 'St. James Cremation',   term: '5-Year', price:  66000, color: '#a32d2d', bg: '#f9e5e5', type: 'Cremation'   },
 };
 const PLAN_KEYS = Object.keys(PLANS);
+
+function planSelectOptions(includePlaceholder = true) {
+  const groups = [
+    ['Traditional Life Plans — 5-Year Pay', PLAN_KEYS.filter(k => PLANS[k].type === 'Traditional' && PLANS[k].term === '5-Year')],
+    ['Traditional Life Plans — 7-Year Pay', PLAN_KEYS.filter(k => PLANS[k].type === 'Traditional' && PLANS[k].term === '7-Year')],
+    ['Cremation Plans — 5-Year Pay', PLAN_KEYS.filter(k => PLANS[k].type === 'Cremation')]
+  ];
+  return (includePlaceholder ? '<option value="">— Select plan type —</option>' : '') + groups.map(([label, keys]) =>
+    `<optgroup label="${label}">${keys.map(k => `<option value="${k}">${PLANS[k].label} (${PLANS[k].term}) — ₱${PLANS[k].price.toLocaleString()}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
 // Legacy compat
 const PLAN_COLORS = { A: '#1a5fa8', B: '#905c0a', C: '#3b6d11', D: '#a32d2d' };
 const PLAN_BG     = { A: '#e3f0fe', B: '#fdf0dc', C: '#eaf3de', D: '#f9e5e5' };
@@ -2620,41 +2760,87 @@ function refresh() {
 //  MODAL
 // ──────────────────────────────────────────────────────────────
 
+function getModalDraftEntry() {
+  const agent = document.getElementById('modal-agent').value;
+  const month = parseInt(document.getElementById('modal-month').value);
+  const entry = getEntry(month, agent);
+  entry.sales = [0,1,2,3,4].map(i => Array.isArray(entry.sales?.[i]) ? entry.sales[i].map(s => ({...s})) : []);
+  entry.weeks = entry.sales.map(x => x.length);
+  return { agent, month, entry };
+}
+
+function updateModalAmountPreview() {
+  const plan = document.getElementById('modal-plan').value;
+  const freq = document.getElementById('modal-frequency').value;
+  const count = Math.max(1, parseInt(document.getElementById('modal-sale-count').value) || 1);
+  const amount = plan ? lookupAmount(plan, freq) : 0;
+  document.getElementById('modal-amount-preview').textContent = '₱' + (amount * count).toLocaleString();
+  document.getElementById('modal-amount-note').textContent = plan
+    ? `${count} sale(s) × ₱${amount.toLocaleString()} ${freq} payment for ${PLANS[plan]?.label || 'selected plan'}.`
+    : 'Select a plan and frequency to compute the amount.';
+}
+
+function renderModalCurrentSales() {
+  const list = document.getElementById('modal-current-sales');
+  const { entry } = getModalDraftEntry();
+  const lines = [];
+  (entry.sales || []).forEach((weekSales, wi) => {
+    if (!weekSales.length) return;
+    const groups = {};
+    weekSales.forEach(sale => {
+      const plan = normalizePlanKey(sale.plan);
+      const freq = sale.freq || 'Full Payment';
+      const key = `${wi}|${plan}|${freq}`;
+      if (!groups[key]) groups[key] = { week: wi, plan, freq, count: 0, amount: 0 };
+      groups[key].count += 1;
+      groups[key].amount += Number(sale.amount) || lookupAmount(plan, freq);
+    });
+    Object.values(groups).forEach(g => lines.push(g));
+  });
+  if (!lines.length) {
+    list.innerHTML = '<div class="bulk-current-empty">No sales added yet for this agent and month.</div>';
+    return;
+  }
+  const totalCount = lines.reduce((s,l)=>s+l.count,0);
+  const totalAmount = lines.reduce((s,l)=>s+l.amount,0);
+  list.innerHTML = lines.map(l => `
+    <div class="bulk-summary-line">
+      <div><strong>Week ${l.week + 1}</strong> · ${PLANS[l.plan]?.label || l.plan} (${PLANS[l.plan]?.term || ''})<br><span>${l.freq} · ${l.count} sale(s)</span></div>
+      <div><strong>₱${l.amount.toLocaleString()}</strong></div>
+    </div>`).join('') + `
+    <div class="bulk-summary-line" style="background:var(--pale-green);">
+      <div><strong>Total</strong><br><span>${totalCount} sale(s)</span></div>
+      <div><strong>₱${totalAmount.toLocaleString()}</strong></div>
+    </div>`;
+}
+
 function openModal() {
-  // populate agent dropdown
   const agentSel = document.getElementById('modal-agent');
   agentSel.innerHTML = AGENTS.map(a => `<option value="${a}">${a}</option>`).join('');
 
-  // populate month dropdown
   const monthSel = document.getElementById('modal-month');
   monthSel.innerHTML = MONTHS.map((m,i) => `<option value="${i}" ${i===currentMonth?'selected':''}>${m}</option>`).join('');
 
-  // clear week inputs
-  ['w1','w2','w3','w4','w5'].forEach(id => document.getElementById(id).value = 0);
-  document.getElementById('modal-plan').value = '';
+  document.getElementById('modal-plan').innerHTML = planSelectOptions(true);
+  document.getElementById('modal-frequency').value = 'Full Payment';
+  document.getElementById('modal-week').value = '0';
+  document.getElementById('modal-sale-count').value = 1;
 
-  // pre-fill if existing
-  prefillModal();
-
+  renderModalCurrentSales();
+  updateModalAmountPreview();
   document.getElementById('modal-overlay').style.display = 'flex';
 }
 
-function prefillModal() {
-  const agent = document.getElementById('modal-agent').value;
-  const month = parseInt(document.getElementById('modal-month').value);
-  const entry = (salesData[month] || {})[agent];
-  if (entry) {
-    const e = migrateEntry(entry);
-    document.getElementById('modal-plan').value = e.plan || '';
-    e.weeks.forEach((w, i) => { document.getElementById(`w${i+1}`).value = w; });
-  } else {
-    document.getElementById('modal-plan').value = '';
-    ['w1','w2','w3','w4','w5'].forEach(id => document.getElementById(id).value = 0);
-  }
+function modalSelectionChanged() {
+  renderModalCurrentSales();
+  updateModalAmountPreview();
 }
 
-document.getElementById('modal-agent').addEventListener('change', prefillModal);
-document.getElementById('modal-month').addEventListener('change', prefillModal);
+document.getElementById('modal-agent').addEventListener('change', modalSelectionChanged);
+document.getElementById('modal-month').addEventListener('change', modalSelectionChanged);
+document.getElementById('modal-plan').addEventListener('change', updateModalAmountPreview);
+document.getElementById('modal-frequency').addEventListener('change', updateModalAmountPreview);
+document.getElementById('modal-sale-count').addEventListener('input', updateModalAmountPreview);
 
 document.getElementById('btn-add-entry').addEventListener('click', openModal);
 
@@ -2662,26 +2848,32 @@ document.getElementById('btn-modal-cancel').addEventListener('click', () => {
   document.getElementById('modal-overlay').style.display = 'none';
 });
 
-document.getElementById('btn-modal-save').addEventListener('click', () => {
-  const agent = document.getElementById('modal-agent').value;
-  const month = parseInt(document.getElementById('modal-month').value);
+document.getElementById('btn-modal-add-line').addEventListener('click', () => {
   const plan = document.getElementById('modal-plan').value;
-  const weeks = ['w1','w2','w3','w4','w5'].map(id => Math.max(0, parseInt(document.getElementById(id).value) || 0));
-
-  const prev = getEntry(month, agent);
-  const freq = prev.freq || 'Full Payment';
-  const sales = weeks.map((count, wi) => {
-    const existing = prev.sales?.[wi] || [];
-    const kept = existing.slice(0, count);
-    while (kept.length < count) kept.push({ plan, freq, amount: lookupAmount(plan, freq) });
-    return kept.map(s => ({ plan: s.plan || plan, freq: s.freq || freq, amount: s.amount || lookupAmount(s.plan || plan, s.freq || freq) }));
-  });
-  saveEntry(month, agent, { plan, freq, weeks, sales });
+  const freq = document.getElementById('modal-frequency').value;
+  const week = parseInt(document.getElementById('modal-week').value);
+  const count = Math.max(1, parseInt(document.getElementById('modal-sale-count').value) || 1);
+  if (!plan) { showToast('⚠️ Please select a plan type.'); return; }
+  const { agent, month, entry } = getModalDraftEntry();
+  const amount = lookupAmount(plan, freq);
+  for (let i = 0; i < count; i++) entry.sales[week].push({ plan, freq, amount });
+  entry.plan = plan;
+  entry.freq = freq;
+  saveEntry(month, agent, entry);
   saveData();
-  syncAgentMonthToSupabase(month, agent, sales);
+  renderModalCurrentSales();
+  refresh();
+  showToast(`✅ Added ${count} sale(s) to Week ${week + 1}`);
+});
+
+document.getElementById('btn-modal-save').addEventListener('click', () => {
+  const { agent, month, entry } = getModalDraftEntry();
+  saveEntry(month, agent, entry);
+  saveData();
+  syncAgentMonthToSupabase(month, agent, entry.sales);
 
   document.getElementById('modal-overlay').style.display = 'none';
-  showToast(`✅ Saved entry for ${agent.split(' ')[0]} (${MONTHS[month]})`);
+  showToast(`✅ Saved ${entry.weeks.reduce((s,v)=>s+v,0)} sale(s) for ${agent.split(' ')[0]} (${MONTHS[month]})`);
   refresh();
 });
 
@@ -2693,6 +2885,7 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
 // ──────────────────────────────────────────────────────────────
 //  MONTH BUTTONS
 // ──────────────────────────────────────────────────────────────
+
 
 document.querySelectorAll('.month-btn').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -2748,6 +2941,11 @@ async function loadAnnouncementsFromSupabase() {
     title: a.title || '',
     message: a.message || '',
     checklist: a.checklist || '',
+    image_url: a.image_url || '',
+    image_path: a.image_path || '',
+    image_name: a.image_name || '',
+    image_size: a.image_size || 0,
+    image_type: a.image_type || '',
     author: a.posted_by || 'Supervisor Hazel',
     date: cloudTime(a.created_at),
     messages: (msgs || []).filter(m => m.announcement_id === a.id).map(m => ({ name: m.sender_name || 'Anonymous', message: m.message || '', time: cloudTime(m.created_at) }))
@@ -2764,7 +2962,12 @@ async function syncAnnouncementsToSupabase() {
       message: ann.message || '',
       category: ann.type || 'general',
       posted_by: ann.author || 'Supervisor Hazel',
-      checklist: ann.checklist || ''
+      checklist: ann.checklist || '',
+      image_url: ann.image_url || null,
+      image_path: ann.image_path || null,
+      image_name: ann.image_name || null,
+      image_size: ann.image_size || null,
+      image_type: ann.image_type || null
     });
     if (error) console.error(error);
   }
@@ -2778,6 +2981,51 @@ async function addAnnouncementMessageToSupabase(annId, name, message) {
   if (!db || !isUuid(annId)) return;
   const { error } = await db.from('announcement_messages').insert({ announcement_id: annId, sender_name: name, message });
   if (error) console.error(error);
+}
+function getSelectedAnnouncementImageFile() {
+  const input = document.getElementById('ann-image');
+  const file = input?.files?.[0];
+  if (!file) return null;
+  if (!ANN_IMAGE_ALLOWED_TYPES.includes(file.type)) {
+    showToast('⚠️ Please attach JPG or PNG image only.');
+    input.value = '';
+    return null;
+  }
+  if (file.size > ANN_IMAGE_MAX_BYTES) {
+    showToast('⚠️ Image is too large. Maximum allowed size is 3 MB.');
+    input.value = '';
+    return null;
+  }
+  return file;
+}
+async function uploadAnnouncementImage(annId, file) {
+  if (!db || !isUuid(annId) || !file) return null;
+  const ext = file.type === 'image/png' ? 'png' : 'jpg';
+  const cleanName = file.name.replace(/[^a-z0-9_.-]/gi, '_').slice(-80);
+  const path = `announcements/${annId}/${Date.now()}-${cleanName || ('image.' + ext)}`;
+  const { error } = await db.storage.from(ANN_IMAGE_BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType: file.type
+  });
+  if (error) throw error;
+  const { data } = db.storage.from(ANN_IMAGE_BUCKET).getPublicUrl(path);
+  return {
+    image_url: data.publicUrl,
+    image_path: path,
+    image_name: file.name,
+    image_size: file.size,
+    image_type: file.type
+  };
+}
+function openAnnouncementImage(url) {
+  if (!url) return;
+  document.getElementById('image-viewer-img').src = url;
+  document.getElementById('image-viewer-overlay').style.display = 'flex';
+}
+function closeAnnouncementImage() {
+  document.getElementById('image-viewer-overlay').style.display = 'none';
+  document.getElementById('image-viewer-img').src = '';
 }
 function annTimestamp() {
   return new Date().toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
@@ -2825,6 +3073,7 @@ function renderAnnouncementCard(ann) {
           <button class="announce-action-btn" onclick="openMessageModal('${ann.id}')">💬 Message</button>
         </div>
       </div>
+      ${ann.image_url ? `<div class="announce-image-wrap" data-image-url="${ann.image_url}" onclick="openAnnouncementImage(this.dataset.imageUrl)" title="Click to view full size"><img src="${ann.image_url}" alt="Announcement attachment" loading="lazy" /><span>Click to view full size</span></div>` : ''}
       <button class="announce-delete" onclick="deleteAnnouncement('ann-${ann.id}')" title="Dismiss">✕</button>
     </div>`;
 }
@@ -2850,6 +3099,8 @@ function editAnnouncement(id) {
   document.getElementById('ann-title').value = ann.title || '';
   document.getElementById('ann-message').value = ann.message || '';
   document.getElementById('ann-checklist').value = ann.checklist || '';
+  document.getElementById('ann-image').value = '';
+  document.getElementById('ann-image-help').textContent = ann.image_url ? `Current image saved: ${ann.image_name || 'attached image'}. Choose a new JPG/PNG to replace it. Max size: 3 MB.` : 'Allowed files: .jpg, .jpeg, .png only · Maximum size: 3 MB · One image per announcement.';
   document.getElementById('ann-type').value = ann.type || 'general';
   document.getElementById('ann-author').value = ann.author || 'Supervisor Hazel';
   document.getElementById('announce-modal-overlay').style.display = 'flex';
@@ -2868,6 +3119,8 @@ document.getElementById('btn-add-announce').addEventListener('click', () => {
   document.getElementById('ann-title').value = '';
   document.getElementById('ann-message').value = '';
   document.getElementById('ann-checklist').value = '';
+  document.getElementById('ann-image').value = '';
+  document.getElementById('ann-image-help').textContent = 'Allowed files: .jpg, .jpeg, .png only · Maximum size: 3 MB · One image per announcement.';
   document.getElementById('ann-type').value = 'general';
   document.getElementById('ann-author').value = 'Supervisor Hazel';
   document.getElementById('announce-modal-overlay').style.display = 'flex';
@@ -2876,29 +3129,46 @@ document.getElementById('btn-ann-cancel').addEventListener('click', () => {
   document.getElementById('announce-modal-overlay').style.display = 'none';
 });
 document.getElementById('announce-modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
-document.getElementById('btn-ann-save').addEventListener('click', () => {
+document.getElementById('image-viewer-close').addEventListener('click', closeAnnouncementImage);
+document.getElementById('image-viewer-overlay').addEventListener('click', function(e) { if (e.target === this) closeAnnouncementImage(); });
+document.getElementById('btn-ann-save').addEventListener('click', async () => {
   const title = document.getElementById('ann-title').value.trim();
   const message = document.getElementById('ann-message').value.trim();
   if (!title) { showToast('⚠️ Please enter a title.'); return; }
-  if (editingAnnouncementId) {
-    const ann = findAnnouncement(editingAnnouncementId);
-    if (ann) {
-      ann.type = document.getElementById('ann-type').value;
-      ann.title = title; ann.message = message;
-      ann.checklist = document.getElementById('ann-checklist').value;
-      ann.author = document.getElementById('ann-author').value || 'Supervisor Hazel';
-      ann.edited = annTimestamp();
+  const file = getSelectedAnnouncementImageFile();
+  try {
+    if (editingAnnouncementId) {
+      const ann = findAnnouncement(editingAnnouncementId);
+      if (ann) {
+        ann.type = document.getElementById('ann-type').value;
+        ann.title = title; ann.message = message;
+        ann.checklist = document.getElementById('ann-checklist').value;
+        ann.author = document.getElementById('ann-author').value || 'Supervisor Hazel';
+        ann.edited = annTimestamp();
+        if (file) {
+          const imageInfo = await uploadAnnouncementImage(ann.id, file);
+          if (imageInfo) Object.assign(ann, imageInfo);
+        }
+      }
+      showToast('✅ Announcement updated!');
+    } else {
+      const ann = {
+        id: newId(), messages: [], type: document.getElementById('ann-type').value,
+        title, message, checklist: document.getElementById('ann-checklist').value,
+        author: document.getElementById('ann-author').value || 'Supervisor Hazel', date: annTimestamp()
+      };
+      if (file) {
+        const imageInfo = await uploadAnnouncementImage(ann.id, file);
+        if (imageInfo) Object.assign(ann, imageInfo);
+      }
+      announcements.unshift(ann);
+      showToast('📢 Announcement posted!');
     }
-    showToast('✅ Announcement updated!');
-  } else {
-    announcements.unshift({
-      id: newId(), messages: [], type: document.getElementById('ann-type').value,
-      title, message, checklist: document.getElementById('ann-checklist').value,
-      author: document.getElementById('ann-author').value || 'Supervisor Hazel', date: annTimestamp()
-    });
-    showToast('📢 Announcement posted!');
+    saveAnnouncements(); document.getElementById('announce-modal-overlay').style.display = 'none'; renderAnnouncements();
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Image upload failed. Please check Supabase Storage setup.');
   }
-  saveAnnouncements(); document.getElementById('announce-modal-overlay').style.display = 'none'; renderAnnouncements();
 });
 document.getElementById('btn-msg-cancel').addEventListener('click', () => { document.getElementById('message-modal-overlay').style.display = 'none'; });
 document.getElementById('message-modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
