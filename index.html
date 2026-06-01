@@ -1273,6 +1273,24 @@
   .plan-mini-bar { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
   .plan-mini-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
 
+  /* ── PLAN GROUPS + ANNOUNCEMENT ACTIONS ── */
+  .plan-summary-group { margin-bottom: 22px; }
+  .plan-summary-group-title {
+    font-family: var(--font-display); font-size: 18px; font-weight: 900;
+    color: var(--dark-green); margin: 8px 0 12px; display:flex; align-items:center; gap:8px;
+  }
+  .plan-summary-group-title::before { content:''; width:4px; height:20px; border-radius:2px; background:var(--gold); display:inline-block; }
+  .plan-card-term { font-size: 10px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; padding: 3px 8px; border-radius: 8px; background: var(--pale-green); color: var(--dark-green); display:inline-block; margin-left:4px; }
+  .plan-payment-table { margin-top:10px; display:grid; grid-template-columns:repeat(2,1fr); gap:5px 10px; font-size:11px; color:var(--text-muted); }
+  .plan-payment-table span strong { color:var(--dark-green); }
+  .announce-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .announce-action-btn { border:1px solid var(--gray-200); background:var(--white); color:var(--dark-green); border-radius:16px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; }
+  .announce-action-btn:hover { border-color:var(--mid-green); background:var(--pale-green); }
+  .announce-thread { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .announce-message-item { background:var(--off-white); border:1px solid var(--gray-100); border-radius:10px; padding:9px 11px; font-size:12px; }
+  .announce-message-item strong { color:var(--dark-green); }
+  .announce-message-item .time { color:var(--gray-400); font-size:11px; margin-left:5px; }
+
 </style>
 </head>
 <body>
@@ -1424,6 +1442,27 @@
       <div class="modal-actions">
         <button class="btn-outline" id="btn-ann-cancel">Cancel</button>
         <button class="btn-primary" id="btn-ann-save">📢 Post It!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANNOUNCEMENT MESSAGE MODAL -->
+  <div class="modal-overlay" id="message-modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-title" id="msg-modal-title">💬 Add Message</div>
+      <div class="modal-sub">Add a comment or update. A timestamp will be saved after sending.</div>
+      <input type="hidden" id="msg-ann-id" />
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="msg-name" type="text" placeholder="Your name" value="Michael Sevilla" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-input" id="msg-body" rows="4" placeholder="Type your message…" style="resize:vertical"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" id="btn-msg-cancel">Cancel</button>
+        <button class="btn-primary" id="btn-msg-send">💬 Send Message</button>
       </div>
     </div>
   </div>
@@ -1648,12 +1687,22 @@
           <label class="form-label">Plan Type</label>
           <select class="form-select" id="detail-plan">
             <option value="">— Select plan type —</option>
-            <option value="ST_ANNE">St. Anne — ₱157,500</option>
-            <option value="ST_BERNADETTE">St. Bernadette — ₱125,000</option>
-            <option value="ST_CLAIRE">St. Claire — ₱98,500</option>
-            <option value="ST_GREGORY">St. Gregory — ₱57,000</option>
-            <option value="ST_JUDE">St. Jude — ₱99,000</option>
-            <option value="ST_JAMES">St. James — ₱66,000</option>
+            <optgroup label="Traditional Life Plans — 5-Year Pay">
+              <option value="ST_ANNE_5Y">St. Anne (5-Year) — ₱157,500</option>
+              <option value="ST_BERNADETTE_5Y">St. Bernadette (5-Year) — ₱125,000</option>
+              <option value="ST_CLAIRE_5Y">St. Claire (5-Year) — ₱98,500</option>
+              <option value="ST_DOMINIQUE_5Y">St. Dominique (5-Year) — ₱67,500</option>
+              <option value="ST_GREGORY_5Y">St. Gregory (5-Year) — ₱57,000</option>
+              <option value="ST_GEORGE_5Y">St. George (5-Year) — ₱53,000</option>
+            </optgroup>
+            <optgroup label="Traditional Life Plans — 7-Year Pay">
+              <option value="ST_GREGORY_7Y">St. Gregory (7-Year) — ₱62,000</option>
+              <option value="ST_GEORGE_7Y">St. George (7-Year) — ₱57,000</option>
+            </optgroup>
+            <optgroup label="Cremation Plans — 5-Year Pay">
+              <option value="ST_JUDE_5Y">St. Jude Cremation (5-Year) — ₱99,000</option>
+              <option value="ST_JAMES_5Y">St. James Cremation (5-Year) — ₱66,000</option>
+            </optgroup>
           </select>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
@@ -1941,7 +1990,7 @@ function openDetailPopup(agentName, week) {
   document.getElementById('detail-period-label').textContent = isTotal ? 'Month' : 'Week';
   document.getElementById('detail-period').textContent = isTotal ? MONTHS[currentMonth] : `Week ${week + 1}`;
 
-  document.getElementById('detail-plan').value = entry.plan || '';
+  document.getElementById('detail-plan').value = normalizePlanKey(entry.plan || '');
   document.getElementById('detail-frequency').value = entry.freq || 'Full Payment';
   document.getElementById('detail-entry-panel').style.display = isTotal ? 'none' : 'block';
 
@@ -2025,9 +2074,7 @@ function updateKPIs() {
   document.querySelector('#kpi-total').nextElementSibling.textContent = `Amount tracked: ₱${totalAmount.toLocaleString()}`;
 
   // plan type counts
-  const planCountKPI = {};
-  PLAN_KEYS.forEach(k => planCountKPI[k] = 0);
-  sorted.forEach(a => { if(a.plan && a.total > 0 && planCountKPI[a.plan] !== undefined) planCountKPI[a.plan] += a.total; });
+  const planCountKPI = getPlanCounts(currentMonth);
   const totalPlans = Object.values(planCountKPI).reduce((s,v)=>s+v,0);
   document.getElementById('kpi-plans').textContent = totalPlans;
   const topPlan = PLAN_KEYS.reduce((best,k) => planCountKPI[k] > planCountKPI[best] ? k : best, PLAN_KEYS[0]);
@@ -2036,6 +2083,31 @@ function updateKPIs() {
   // supervisor stats
   document.getElementById('sup-total-sales').textContent = total;
   document.getElementById('sup-active-agents').textContent = active;
+}
+
+function getPlanCounts(month) {
+  const counts = {};
+  PLAN_KEYS.forEach(k => counts[k] = 0);
+  Object.values(getMonthData(month)).forEach(raw => {
+    const entry = migrateEntry(raw);
+    (entry.sales || []).flat().forEach(sale => {
+      const key = normalizePlanKey(sale.plan);
+      if (counts[key] !== undefined) counts[key] += 1;
+    });
+  });
+  return counts;
+}
+
+function getPlanGroupTitle(group) {
+  if (group === 'traditional5') return 'Traditional Life Plans — 5-Year Pay Plans';
+  if (group === 'traditional7') return 'Traditional Life Plans — 7-Year Pay Plans';
+  return 'Cremation Plans — 5-Year Pay Plans';
+}
+
+function planGroupOf(key) {
+  const info = PLANS[key];
+  if (info.type === 'Cremation') return 'cremation';
+  return info.term === '7-Year' ? 'traditional7' : 'traditional5';
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -2073,9 +2145,7 @@ function renderCharts() {
   });
 
   // Pie chart — plan types (real plan names)
-  const planCountPie = {};
-  PLAN_KEYS.forEach(k => planCountPie[k] = 0);
-  sorted.forEach(a => { if(a.plan && a.total > 0 && planCountPie[a.plan] !== undefined) planCountPie[a.plan] += a.total; });
+  const planCountPie = getPlanCounts(currentMonth);
   const pieLabels = PLAN_KEYS.filter(k => planCountPie[k] > 0).map(k => PLANS[k].label);
   const pieData = PLAN_KEYS.filter(k => planCountPie[k] > 0).map(k => planCountPie[k]);
   const pieColors = PLAN_KEYS.filter(k => planCountPie[k] > 0).map(k => PLANS[k].color);
@@ -2149,11 +2219,8 @@ function renderTop5() {
 
 // Plan type breakdown
 function renderPlanBreakdown() {
-  const sorted = allAgentTotals(currentMonth);
   const container = document.getElementById('plan-breakdown-container');
-  const planCount = {};
-  PLAN_KEYS.forEach(k => planCount[k] = 0);
-  sorted.forEach(a => { if(a.plan && a.total > 0 && planCount[a.plan] !== undefined) planCount[a.plan] += a.total; });
+  const planCount = getPlanCounts(currentMonth);
   const total = Object.values(planCount).reduce((s,v)=>s+v,0);
   if (!total) { container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding-top:8px">No plan data yet.</p>'; return; }
   const maxVal = Math.max(...Object.values(planCount), 1);
@@ -2165,8 +2232,8 @@ function renderPlanBreakdown() {
       <div class="progress-label">
         <span style="display:flex;align-items:center;gap:6px;">
           <span style="width:10px;height:10px;border-radius:2px;background:${info.color};display:inline-block;"></span>
-          <span style="font-weight:600;font-size:12px;">${info.label}</span>
-          <span style="font-size:11px;color:var(--text-muted);">(₱${info.price.toLocaleString()})</span>
+          <span style="font-weight:600;font-size:12px;">${info.label} (${info.term})</span>
+          <span style="font-size:11px;color:var(--text-muted);">₱${info.price.toLocaleString()}</span>
         </span>
         <span style="font-weight:700;font-size:12px;">${v} units</span>
       </div>
@@ -2177,35 +2244,47 @@ function renderPlanBreakdown() {
 
 // Plan summary cards
 function renderPlanSummaryCards() {
-  const sorted = allAgentTotals(currentMonth);
-  const planCount = {};
-  PLAN_KEYS.forEach(k => planCount[k] = 0);
-  sorted.forEach(a => { if(a.plan && a.total > 0 && planCount[a.plan] !== undefined) planCount[a.plan] += a.total; });
+  const planCount = getPlanCounts(currentMonth);
   const maxVal = Math.max(...Object.values(planCount), 1);
   const grid = document.getElementById('plan-summary-grid');
   if (!grid) return;
-  grid.innerHTML = PLAN_KEYS.map(k => {
-    const info = PLANS[k];
-    const v = planCount[k];
-    const pct = Math.round(v / maxVal * 100);
-    const borderColor = info.color;
-    const typeBg = info.type === 'Traditional' ? '#eaf3de' : '#e0f5f2';
-    const typeColor = info.type === 'Traditional' ? '#3b6d11' : '#1e8a7a';
-    return `<div class="plan-summary-card" style="border-top-color:${borderColor}">
-      <div class="plan-card-top">
-        <div>
-          <div class="plan-name">${info.label}</div>
-          <span class="plan-type-label" style="background:${typeBg};color:${typeColor}">${info.type}</span>
+  const groups = [
+    ['traditional5', PLAN_KEYS.filter(k => planGroupOf(k) === 'traditional5')],
+    ['traditional7', PLAN_KEYS.filter(k => planGroupOf(k) === 'traditional7')],
+    ['cremation', PLAN_KEYS.filter(k => planGroupOf(k) === 'cremation')]
+  ];
+  grid.innerHTML = groups.map(([group, keys]) => {
+    const cards = keys.map(k => {
+      const info = PLANS[k];
+      const prices = PLAN_PRICES[k] || {};
+      const v = planCount[k] || 0;
+      const pct = Math.round(v / maxVal * 100);
+      const borderColor = info.color;
+      const typeBg = info.type === 'Traditional' ? '#eaf3de' : '#e0f5f2';
+      const typeColor = info.type === 'Traditional' ? '#3b6d11' : '#1e8a7a';
+      return `<div class="plan-summary-card" style="border-top-color:${borderColor}">
+        <div class="plan-card-top">
+          <div>
+            <div class="plan-name">${info.label}<span class="plan-card-term">${info.term}</span></div>
+            <span class="plan-type-label" style="background:${typeBg};color:${typeColor}">${info.type}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">Units Sold</div>
+            <div style="font-family:var(--font-display);font-size:26px;font-weight:900;color:${borderColor};line-height:1">${v}</div>
+          </div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">Units Sold</div>
-          <div style="font-family:var(--font-display);font-size:26px;font-weight:900;color:${borderColor};line-height:1">${v}</div>
+        <div class="plan-price">₱${info.price.toLocaleString()}</div>
+        <div class="plan-units-sold">Contract price · ${info.type} Plan</div>
+        <div class="plan-payment-table">
+          <span>Annual: <strong>₱${(prices.Annual||0).toLocaleString()}</strong></span>
+          <span>Semi-Annual: <strong>₱${(prices['Semi-Annual']||0).toLocaleString()}</strong></span>
+          <span>Quarterly: <strong>₱${(prices.Quarterly||0).toLocaleString()}</strong></span>
+          <span>Monthly: <strong>₱${(prices.Monthly||0).toLocaleString()}</strong></span>
         </div>
-      </div>
-      <div class="plan-price">₱${info.price.toLocaleString()}</div>
-      <div class="plan-units-sold">Contract price · ${info.type} Plan</div>
-      <div class="plan-mini-bar"><div class="plan-mini-fill" style="width:${pct}%;background:${borderColor}"></div></div>
-    </div>`;
+        <div class="plan-mini-bar" style="margin-top:10px"><div class="plan-mini-fill" style="width:${pct}%;background:${borderColor}"></div></div>
+      </div>`;
+    }).join('');
+    return `<div class="plan-summary-group" style="grid-column:1 / -1;"><div class="plan-summary-group-title">${getPlanGroupTitle(group)}</div><div class="plan-summary-grid">${cards}</div></div>`;
   }).join('');
 }
 
@@ -2329,80 +2408,99 @@ function showToast(msg) {
 
 let announcements = [];
 try {
-  const stored = localStorage.getItem('stpeter_announcements_v1');
-  if (stored) announcements = JSON.parse(stored);
+  const stored = localStorage.getItem('stpeter_announcements_v2') || localStorage.getItem('stpeter_announcements_v1');
+  if (stored) announcements = JSON.parse(stored).map(a => ({ messages: [], ...a }));
 } catch(e) {}
+let editingAnnouncementId = null;
 
 function saveAnnouncements() {
-  try { localStorage.setItem('stpeter_announcements_v1', JSON.stringify(announcements)); } catch(e) {}
+  try { localStorage.setItem('stpeter_announcements_v2', JSON.stringify(announcements)); } catch(e) {}
 }
-
-function renderAnnouncements() {
-  const list = document.getElementById('announce-list');
-  // Always show the default pinned card if not dismissed
-  const defaultCard = list.querySelector('[data-id="default-1"]');
-
-  // Remove dynamic cards
-  list.querySelectorAll('[data-id^="ann-"]').forEach(el => el.remove());
-
-  if (!announcements.length && !defaultCard) {
-    list.innerHTML = '<div class="announce-empty">No announcements yet. Click "Post Announcement" to add one.</div>';
-    return;
-  }
-
-  // Re-remove empty state if it was added
-  const empty = list.querySelector('.announce-empty');
-  if (empty) empty.remove();
-
-  // Add saved announcements (prepend after default)
-  announcements.forEach((ann, i) => {
-    const tagMap = { urgent: 'tag-urgent', info: 'tag-info', general: 'tag-general' };
-    const typeLabel = { urgent: '🔴 Urgent', info: '🔵 Info', general: '🟢 General' };
-    const cardClass = ann.type === 'urgent' ? 'urgent' : ann.type === 'info' ? 'info' : 'green';
-    const iconMap = { urgent: '⚠️', info: 'ℹ️', general: '📌' };
-    const checkItems = ann.checklist ? ann.checklist.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-    const div = document.createElement('div');
-    div.className = `announce-card ${cardClass}`;
-    div.dataset.id = `ann-${ann.id}`;
-    div.innerHTML = `
+function annTimestamp() {
+  return new Date().toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+}
+function findAnnouncement(id) {
+  return announcements.find(a => String(a.id) === String(id));
+}
+function defaultAnnouncement(id) {
+  if (id === 'default-1') return {
+    id:'default-1', type:'urgent', title:'Need 3 Headcount for Manning in Colonnade',
+    message:'We need volunteers for field assignment at Colonnade Mall. Please coordinate with Supervisor Hazel for schedule confirmation.',
+    checklist:'Complete St. Peter Uniform, St. Peter ID, Flyers, Forms', author:'Supervisor Hazel', date:'May 26, 2026 · 8:30 AM', messages:[]
+  };
+  if (id === 'default-2') return {
+    id:'default-2', type:'general', title:'🎁 FREE Sack of Rice — 1 Plan = 1 Sack!',
+    message:'Exciting promo for all agents! For every ONE plan sold, you will receive a FREE sack of rice. This is effective until the end of the current cut-off period. Sell more, earn more! 💪',
+    checklist:'Valid for all plan types, 1 plan = 1 sack of rice, Until end of cut-off', author:'Supervisor Hazel', date:'May 26, 2026 · 8:45 AM', messages:[]
+  };
+  return null;
+}
+function saveDefaultAsAnnouncement(id) {
+  let ann = findAnnouncement(id);
+  if (!ann) { ann = defaultAnnouncement(id); announcements.push(ann); saveAnnouncements(); }
+  return ann;
+}
+function renderAnnouncementCard(ann) {
+  const tagMap = { urgent: 'tag-urgent', info: 'tag-info', general: 'tag-general' };
+  const typeLabel = { urgent: '🔴 Urgent', info: '🔵 Info', general: '🟢 General' };
+  const cardClass = ann.type === 'urgent' ? 'urgent' : ann.type === 'info' ? 'info' : 'green';
+  const iconMap = { urgent: '⚠️', info: 'ℹ️', general: '📌' };
+  const checkItems = ann.checklist ? ann.checklist.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const msgs = Array.isArray(ann.messages) ? ann.messages : [];
+  return `
+    <div class="announce-card ${cardClass}" data-id="ann-${ann.id}">
       <div class="announce-icon">${iconMap[ann.type] || '📌'}</div>
       <div class="announce-body">
         <span class="announce-tag ${tagMap[ann.type]}">${typeLabel[ann.type]}</span>
         <div class="announce-title">${ann.title}</div>
-        <div class="announce-body-text">${ann.message}</div>
+        <div class="announce-body-text">${ann.message || ''}</div>
         ${checkItems.length ? `<ul class="announce-checklist">${checkItems.map(c=>`<li>${c}</li>`).join('')}</ul>` : ''}
-        <div class="announce-meta">Posted by ${ann.author} · ${ann.date}</div>
+        <div class="announce-meta">Posted by ${ann.author || 'Supervisor Hazel'} · ${ann.date}</div>
+        ${msgs.length ? `<div class="announce-thread">${msgs.map(m=>`<div class="announce-message-item"><strong>${m.name}</strong><span class="time">${m.time}</span><br>${m.message}</div>`).join('')}</div>` : ''}
+        <div class="announce-actions">
+          <button class="announce-action-btn" onclick="editAnnouncement('${ann.id}')">✏️ Edit</button>
+          <button class="announce-action-btn" onclick="openMessageModal('${ann.id}')">💬 Message</button>
+        </div>
       </div>
       <button class="announce-delete" onclick="deleteAnnouncement('ann-${ann.id}')" title="Dismiss">✕</button>
-    `;
-
-    // Insert after default card or at top
-    if (defaultCard && defaultCard.nextSibling) {
-      list.insertBefore(div, defaultCard.nextSibling);
-    } else if (defaultCard) {
-      list.appendChild(div);
-    } else {
-      list.insertBefore(div, list.firstChild);
-    }
-  });
+    </div>`;
 }
-
+function renderAnnouncements() {
+  const list = document.getElementById('announce-list');
+  const defaults = ['default-1','default-2'].map(id => findAnnouncement(id) || defaultAnnouncement(id)).filter(Boolean);
+  const dynamic = announcements.filter(a => !String(a.id).startsWith('default-'));
+  const all = [...dynamic, ...defaults];
+  list.innerHTML = all.length ? all.map(renderAnnouncementCard).join('') : '<div class="announce-empty">No announcements yet. Click "Post Announcement" to add one.</div>';
+}
 function deleteAnnouncement(id) {
-  if (id === 'default-1' || id === 'default-2') {
-    document.querySelector(`[data-id="${id}"]`)?.remove();
-    const list = document.getElementById('announce-list');
-    if (!list.children.length) list.innerHTML = '<div class="announce-empty">No announcements. Click "Post Announcement" to add one.</div>';
-    return;
-  }
   const realId = id.replace('ann-', '');
-  announcements = announcements.filter(a => a.id != realId);
-  saveAnnouncements();
-  renderAnnouncements();
-  showToast('Announcement dismissed.');
+  announcements = announcements.filter(a => String(a.id) !== String(realId));
+  saveAnnouncements(); renderAnnouncements(); showToast('Announcement dismissed.');
+}
+function editAnnouncement(id) {
+  const ann = String(id).startsWith('default-') ? saveDefaultAsAnnouncement(id) : findAnnouncement(id);
+  if (!ann) return;
+  editingAnnouncementId = ann.id;
+  document.querySelector('#announce-modal-overlay .modal-title').textContent = '✏️ Edit Announcement';
+  document.getElementById('btn-ann-save').textContent = '💾 Save Changes';
+  document.getElementById('ann-title').value = ann.title || '';
+  document.getElementById('ann-message').value = ann.message || '';
+  document.getElementById('ann-checklist').value = ann.checklist || '';
+  document.getElementById('ann-type').value = ann.type || 'general';
+  document.getElementById('ann-author').value = ann.author || 'Supervisor Hazel';
+  document.getElementById('announce-modal-overlay').style.display = 'flex';
+}
+function openMessageModal(id) {
+  if (String(id).startsWith('default-')) saveDefaultAsAnnouncement(id);
+  document.getElementById('msg-ann-id').value = id;
+  document.getElementById('msg-body').value = '';
+  document.getElementById('message-modal-overlay').style.display = 'flex';
 }
 
 document.getElementById('btn-add-announce').addEventListener('click', () => {
+  editingAnnouncementId = null;
+  document.querySelector('#announce-modal-overlay .modal-title').textContent = '📢 Post Announcement';
+  document.getElementById('btn-ann-save').textContent = '📢 Post It!';
   document.getElementById('ann-title').value = '';
   document.getElementById('ann-message').value = '';
   document.getElementById('ann-checklist').value = '';
@@ -2410,35 +2508,46 @@ document.getElementById('btn-add-announce').addEventListener('click', () => {
   document.getElementById('ann-author').value = 'Supervisor Hazel';
   document.getElementById('announce-modal-overlay').style.display = 'flex';
 });
-
 document.getElementById('btn-ann-cancel').addEventListener('click', () => {
   document.getElementById('announce-modal-overlay').style.display = 'none';
 });
-
-document.getElementById('announce-modal-overlay').addEventListener('click', function(e) {
-  if (e.target === this) this.style.display = 'none';
-});
-
+document.getElementById('announce-modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
 document.getElementById('btn-ann-save').addEventListener('click', () => {
   const title = document.getElementById('ann-title').value.trim();
   const message = document.getElementById('ann-message').value.trim();
   if (!title) { showToast('⚠️ Please enter a title.'); return; }
-
-  const ann = {
-    id: Date.now(),
-    type: document.getElementById('ann-type').value,
-    title,
-    message,
-    checklist: document.getElementById('ann-checklist').value,
-    author: document.getElementById('ann-author').value || 'Supervisor Hazel',
-    date: new Date().toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true })
-  };
-
-  announcements.unshift(ann);
-  saveAnnouncements();
-  document.getElementById('announce-modal-overlay').style.display = 'none';
-  renderAnnouncements();
-  showToast('📢 Announcement posted!');
+  if (editingAnnouncementId) {
+    const ann = findAnnouncement(editingAnnouncementId);
+    if (ann) {
+      ann.type = document.getElementById('ann-type').value;
+      ann.title = title; ann.message = message;
+      ann.checklist = document.getElementById('ann-checklist').value;
+      ann.author = document.getElementById('ann-author').value || 'Supervisor Hazel';
+      ann.edited = annTimestamp();
+    }
+    showToast('✅ Announcement updated!');
+  } else {
+    announcements.unshift({
+      id: Date.now(), messages: [], type: document.getElementById('ann-type').value,
+      title, message, checklist: document.getElementById('ann-checklist').value,
+      author: document.getElementById('ann-author').value || 'Supervisor Hazel', date: annTimestamp()
+    });
+    showToast('📢 Announcement posted!');
+  }
+  saveAnnouncements(); document.getElementById('announce-modal-overlay').style.display = 'none'; renderAnnouncements();
+});
+document.getElementById('btn-msg-cancel').addEventListener('click', () => { document.getElementById('message-modal-overlay').style.display = 'none'; });
+document.getElementById('message-modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+document.getElementById('btn-msg-send').addEventListener('click', () => {
+  const id = document.getElementById('msg-ann-id').value;
+  const name = document.getElementById('msg-name').value.trim() || 'Anonymous';
+  const message = document.getElementById('msg-body').value.trim();
+  if (!message) { showToast('⚠️ Please type a message.'); return; }
+  const ann = String(id).startsWith('default-') ? saveDefaultAsAnnouncement(id) : findAnnouncement(id);
+  if (!ann) return;
+  ann.messages = Array.isArray(ann.messages) ? ann.messages : [];
+  ann.messages.push({ name, message, time: annTimestamp() });
+  saveAnnouncements(); document.getElementById('message-modal-overlay').style.display = 'none'; renderAnnouncements(); showToast('💬 Message sent with timestamp.');
 });
 
 // ──────────────────────────────────────────────────────────────
