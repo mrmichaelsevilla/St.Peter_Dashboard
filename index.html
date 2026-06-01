@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="favicon.png">
 <title>St. Peter Life Plan – SA2 Team Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -520,6 +519,27 @@
     border-radius: 8px;
     padding: 4px 14px;
     min-width: 40px;
+  }
+
+
+  .amount-mini {
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .finance-kpi-grid .kpi-value {
+    font-size: 28px;
+    line-height: 1.15;
+  }
+
+  .finance-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: -18px;
+    margin-bottom: 24px;
   }
 
   /* ── CHARTS SECTION ── */
@@ -1334,7 +1354,6 @@
     </div>
   </div>
 
-
   <!-- ANNOUNCEMENT BOARD -->
   <div class="announce-section">
     <div class="announce-header">
@@ -1357,21 +1376,6 @@
           <div class="announce-meta">Posted by Supervisor Hazel · SA2 Team &nbsp;·&nbsp; <strong>May 26, 2026 · 8:30 AM</strong></div>
         </div>
         <button class="announce-delete" onclick="deleteAnnouncement('default-1')" title="Dismiss">✕</button>
-      </div>
-      <div class="announce-card green" data-id="default-2">
-        <div class="announce-icon">🌾</div>
-        <div class="announce-body">
-          <span class="announce-tag tag-general">Promo · Incentive</span>
-          <div class="announce-title">🎁 FREE Sack of Rice — 1 Plan = 1 Sack!</div>
-          <div class="announce-body-text">Exciting promo for all agents! For every ONE plan sold, you will receive a FREE sack of rice. This is effective until the end of the current cut-off period. Sell more, earn more! 💪</div>
-          <ul class="announce-checklist">
-            <li>Valid for all plan types</li>
-            <li>1 plan = 1 sack of rice</li>
-            <li>Until end of cut-off</li>
-          </ul>
-          <div class="announce-meta">Posted by Supervisor Hazel · SA2 Team &nbsp;·&nbsp; <strong>May 26, 2026 · 8:45 AM</strong></div>
-        </div>
-        <button class="announce-delete" onclick="deleteAnnouncement('default-2')" title="Dismiss">✕</button>
       </div>
     </div>
   </div>
@@ -1518,6 +1522,39 @@
     </div>
   </div>
 
+
+  <!-- FINANCE KPI CARDS -->
+  <div class="section-header" style="margin-top:4px;">
+    <div class="section-title">Finance Summary — Current Month</div>
+  </div>
+  <div class="kpi-grid finance-kpi-grid">
+    <div class="kpi-card gold">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Total Amount Tracked</div>
+      <div class="kpi-value" id="finance-total-amount">₱0</div>
+      <div class="kpi-sub">Based on selected payment frequency</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">🧾</div>
+      <div class="kpi-label">Average Amount / Sale</div>
+      <div class="kpi-value" id="finance-avg-sale">₱0</div>
+      <div class="kpi-sub" id="finance-avg-detail">0 tracked sales</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-icon">🏆</div>
+      <div class="kpi-label">Top Revenue Agent</div>
+      <div class="kpi-value" style="font-size:18px;padding-top:6px;" id="finance-top-agent">—</div>
+      <div class="kpi-sub" id="finance-top-agent-amount">₱0</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Top Revenue Plan</div>
+      <div class="kpi-value" style="font-size:18px;padding-top:6px;" id="finance-top-plan">—</div>
+      <div class="kpi-sub" id="finance-top-plan-amount">₱0</div>
+    </div>
+  </div>
+  <div class="finance-note">Finance values use the amount selected in the sales popup: Full Payment, Annual, Semi-Annual, Quarterly, or Monthly.</div>
+
   <!-- CONTROLS -->
   <div class="controls-bar">
     <button class="month-btn active" data-month="0">January</button>
@@ -1578,7 +1615,7 @@
     <div class="two-col">
       <!-- Bar chart -->
       <div class="card">
-        <div class="chart-title">📊 Monthly Sales by Agent (Top 10)</div>
+        <div class="chart-title">📊 Units Sold by Agent (Top 10)</div>
         <div style="position:relative;height:320px;">
           <canvas id="agentBarChart" role="img" aria-label="Bar chart showing sales per agent for the selected month">No data yet.</canvas>
         </div>
@@ -1597,6 +1634,35 @@
       <div class="chart-title">📈 Monthly Sales Trend (Year View)</div>
       <div style="position:relative;height:220px;">
         <canvas id="trendLineChart" role="img" aria-label="Line chart showing monthly sales trend across all months">No data yet.</canvas>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FINANCE CHARTS SECTION -->
+  <div style="margin-top: 10px;">
+    <div class="section-header">
+      <div class="section-title">Finance Analytics</div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="chart-title">💰 Revenue by Agent (Top 10)</div>
+        <div style="position:relative;height:320px;">
+          <canvas id="revenueAgentChart" role="img" aria-label="Bar chart showing total tracked amount by agent">No data yet.</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="chart-title">💼 Revenue by Plan Type</div>
+        <div class="legend" id="revenue-plan-legend"></div>
+        <div style="position:relative;height:280px;">
+          <canvas id="revenuePlanChart" role="img" aria-label="Doughnut chart showing tracked revenue by plan type">No data yet.</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:32px;">
+      <div class="chart-title">📈 Monthly Revenue Trend (Year View)</div>
+      <div style="position:relative;height:220px;">
+        <canvas id="revenueTrendChart" role="img" aria-label="Line chart showing monthly tracked revenue trend">No data yet.</canvas>
       </div>
     </div>
   </div>
@@ -1808,6 +1874,7 @@ try {
 
 let currentMonth = new Date().getMonth();
 let barChart = null, pieChart = null, lineChart = null;
+let revenueAgentChart = null, revenuePlanChart = null, revenueTrendChart = null;
 
 function saveData() {
   try { localStorage.setItem('stpeter_sales_v2', JSON.stringify(salesData)); } catch(e) {}
@@ -1932,12 +1999,15 @@ function renderTable() {
     const rank = i + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
     const weeks = agent.weeks;
-    const wCells = weeks.map((w, wi) =>
-      `<td style="text-align:center">
+    const wCells = weeks.map((w, wi) => {
+      const wAmount = (agent.sales?.[wi] || []).reduce((s, sale) => s + (Number(sale.amount) || lookupAmount(sale.plan, sale.freq)), 0);
+      return `<td style="text-align:center">
          <span class="num-cell ${w>0?'has-data':''}" data-agent="${agent.name}" data-week="${wi}" title="Click for sales details">${w > 0 ? w : '—'}</span>
-       </td>`).join('');
+         ${w > 0 ? `<div class="amount-mini">₱${wAmount.toLocaleString()}</div>` : ''}
+       </td>`;
+    }).join('');
     const totalCell = agent.total > 0
-      ? `<span class="total-badge num-cell" data-agent="${agent.name}" data-week="total" title="Click for sales summary">${agent.total}</span>`
+      ? `<span class="total-badge num-cell" data-agent="${agent.name}" data-week="total" title="Click for sales summary">${agent.total}</span><div class="amount-mini">₱${(agent.amount||0).toLocaleString()}</div>`
       : `<span class="num-cell num-cell-zero" data-agent="${agent.name}" data-week="total" title="Click to add sales">0</span>`;
 
     html += `<tr data-agent="${agent.name}">
@@ -2173,6 +2243,55 @@ function updateKPIs() {
   document.getElementById('sup-active-agents').textContent = active;
 }
 
+
+function formatPeso(value) {
+  return '₱' + Math.round(Number(value) || 0).toLocaleString();
+}
+
+function monthRevenue(month) {
+  return allAgentTotals(month).reduce((sum, agent) => sum + (Number(agent.amount) || 0), 0);
+}
+
+function getPlanRevenue(month) {
+  const revenue = {};
+  PLAN_KEYS.forEach(k => revenue[k] = 0);
+  Object.values(getMonthData(month)).forEach(raw => {
+    const entry = migrateEntry(raw);
+    (entry.sales || []).flat().forEach(sale => {
+      const key = normalizePlanKey(sale.plan);
+      if (revenue[key] !== undefined) {
+        revenue[key] += Number(sale.amount) || lookupAmount(sale.plan, sale.freq);
+      }
+    });
+  });
+  return revenue;
+}
+
+function updateFinanceKPIs() {
+  const sortedByUnits = allAgentTotals(currentMonth);
+  const totalUnits = sortedByUnits.reduce((s, a) => s + a.total, 0);
+  const totalAmount = sortedByUnits.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+  const avg = totalUnits ? totalAmount / totalUnits : 0;
+
+  const sortedByRevenue = [...sortedByUnits].sort((a,b) => (b.amount || 0) - (a.amount || 0));
+  const topAgent = sortedByRevenue.find(a => (a.amount || 0) > 0);
+
+  const planRevenue = getPlanRevenue(currentMonth);
+  const topPlanKey = PLAN_KEYS.reduce((best, key) => planRevenue[key] > planRevenue[best] ? key : best, PLAN_KEYS[0]);
+  const topPlanAmount = planRevenue[topPlanKey] || 0;
+
+  const totalEl = document.getElementById('finance-total-amount');
+  if (!totalEl) return;
+  totalEl.textContent = formatPeso(totalAmount);
+  document.getElementById('finance-avg-sale').textContent = formatPeso(avg);
+  document.getElementById('finance-avg-detail').textContent = `${totalUnits} tracked sale${totalUnits === 1 ? '' : 's'}`;
+  document.getElementById('finance-top-agent').textContent = topAgent ? topAgent.name.split(' ')[0] : '—';
+  document.getElementById('finance-top-agent-amount').textContent = topAgent ? formatPeso(topAgent.amount) : '₱0';
+  document.getElementById('finance-top-plan').textContent = topPlanAmount ? PLANS[topPlanKey].label : '—';
+  document.getElementById('finance-top-plan-amount').textContent = formatPeso(topPlanAmount);
+}
+
+
 function getPlanCounts(month) {
   const counts = {};
   PLAN_KEYS.forEach(k => counts[k] = 0);
@@ -2289,6 +2408,111 @@ function renderCharts() {
   });
 }
 
+
+function renderFinanceCharts() {
+  const revenueSorted = allAgentTotals(currentMonth)
+    .filter(a => (a.amount || 0) > 0)
+    .sort((a,b) => (b.amount || 0) - (a.amount || 0))
+    .slice(0, 10);
+
+  const revAgentEl = document.getElementById('revenueAgentChart');
+  if (revAgentEl) {
+    if (revenueAgentChart) revenueAgentChart.destroy();
+    revenueAgentChart = new Chart(revAgentEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: revenueSorted.map(a => a.name.split(' ')[0]),
+        datasets: [{
+          label: 'Tracked Amount',
+          data: revenueSorted.map(a => a.amount || 0),
+          backgroundColor: revenueSorted.map((a,i) => i === 0 ? '#c9a227' : '#2d7a4f'),
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => formatPeso(ctx.parsed.y) } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 12 }, color: '#5a7a68', maxRotation: 30 } },
+          y: { grid: { color: '#eef2ef' }, ticks: { font: { family: 'DM Sans', size: 12 }, color: '#5a7a68', callback: v => formatPeso(v) }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  const planRevenue = getPlanRevenue(currentMonth);
+  const revKeys = PLAN_KEYS.filter(k => planRevenue[k] > 0);
+  const revLabels = revKeys.map(k => PLANS[k].label + ' (' + PLANS[k].term + ')');
+  const revData = revKeys.map(k => planRevenue[k]);
+  const revColors = revKeys.map(k => PLANS[k].color);
+
+  const revPlanEl = document.getElementById('revenuePlanChart');
+  if (revPlanEl) {
+    if (revenuePlanChart) revenuePlanChart.destroy();
+    revenuePlanChart = new Chart(revPlanEl.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: revLabels,
+        datasets: [{ data: revData, backgroundColor: revColors, borderWidth: 3, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatPeso(ctx.parsed)}` } }
+        }
+      }
+    });
+  }
+
+  const revTotal = revData.reduce((s,v)=>s+v,0);
+  const revLegend = document.getElementById('revenue-plan-legend');
+  if (revLegend) {
+    revLegend.innerHTML = revLabels.map((label,i) => {
+      const pct = revTotal > 0 ? Math.round(revData[i] / revTotal * 100) : 0;
+      return `<span class="legend-item"><span class="legend-dot" style="background:${revColors[i]}"></span>${label}: ${formatPeso(revData[i])} (${pct}%)</span>`;
+    }).join('') || '<span style="font-size:13px;color:#8fa898">No finance data yet</span>';
+  }
+
+  const revenueTrend = MONTHS.map((_, mi) => monthRevenue(mi));
+  const revTrendEl = document.getElementById('revenueTrendChart');
+  if (revTrendEl) {
+    if (revenueTrendChart) revenueTrendChart.destroy();
+    revenueTrendChart = new Chart(revTrendEl.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: MONTHS.map(m => m.slice(0,3)),
+        datasets: [{
+          label: 'Tracked Amount',
+          data: revenueTrend,
+          borderColor: '#c9a227',
+          backgroundColor: 'rgba(201,162,39,0.12)',
+          pointBackgroundColor: MONTHS.map((_,i) => i === currentMonth ? '#2d7a4f' : '#c9a227'),
+          pointRadius: MONTHS.map((_,i) => i === currentMonth ? 7 : 4),
+          fill: true, tension: 0.35, borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => formatPeso(ctx.parsed.y) } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 12 }, color: '#5a7a68' } },
+          y: { grid: { color: '#eef2ef' }, ticks: { font: { family: 'DM Sans', size: 12 }, color: '#5a7a68', callback: v => formatPeso(v) }, beginAtZero: true }
+        }
+      }
+    });
+  }
+}
+
+
 // Top 5 progress bars
 function renderTop5() {
   const sorted = allAgentTotals(currentMonth).filter(a => a.total > 0).slice(0, 5);
@@ -2384,6 +2608,8 @@ function refresh() {
   renderTable();
   updateKPIs();
   renderCharts();
+  updateFinanceKPIs();
+  renderFinanceCharts();
   renderTop5();
   renderPlanBreakdown();
   renderPlanSummaryCards();
