@@ -1605,12 +1605,16 @@
       <label class="form-label">Plan Type</label>
       <select class="form-select" id="modal-plan">
         <option value="">— Select default plan type —</option>
-        <option value="ST_ANNE">St. Anne — ₱157,500</option>
-        <option value="ST_BERNADETTE">St. Bernadette — ₱125,000</option>
-        <option value="ST_CLAIRE">St. Claire — ₱98,500</option>
-        <option value="ST_GREGORY">St. Gregory — ₱57,000</option>
-        <option value="ST_JUDE">St. Jude — ₱99,000</option>
-        <option value="ST_JAMES">St. James — ₱66,000</option>
+        <option value="ST_ANNE_5Y">St. Anne (5-Year) — ₱157,500</option>
+        <option value="ST_BERNADETTE_5Y">St. Bernadette (5-Year) — ₱125,000</option>
+        <option value="ST_CLAIRE_5Y">St. Claire (5-Year) — ₱98,500</option>
+        <option value="ST_DOMINIQUE_5Y">St. Dominique (5-Year) — ₱67,500</option>
+        <option value="ST_GREGORY_5Y">St. Gregory (5-Year) — ₱57,000</option>
+        <option value="ST_GEORGE_5Y">St. George (5-Year) — ₱53,000</option>
+        <option value="ST_GREGORY_7Y">St. Gregory (7-Year) — ₱62,000</option>
+        <option value="ST_GEORGE_7Y">St. George (7-Year) — ₱57,000</option>
+        <option value="ST_JUDE_5Y">St. Jude Cremation (5-Year) — ₱99,000</option>
+        <option value="ST_JAMES_5Y">St. James Cremation (5-Year) — ₱66,000</option>
       </select>
     </div>
 
@@ -1708,12 +1712,16 @@
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const PLANS = {
-  'ST_ANNE':       { label: 'St. Anne',       price: 157500, color: '#1a5fa8', bg: '#e3f0fe', type: 'Traditional' },
-  'ST_BERNADETTE': { label: 'St. Bernadette', price: 125000, color: '#3b6d11', bg: '#eaf3de', type: 'Traditional' },
-  'ST_CLAIRE':     { label: 'St. Claire',     price:  98500, color: '#905c0a', bg: '#fdf0dc', type: 'Traditional' },
-  'ST_GREGORY':    { label: 'St. Gregory',    price:  57000, color: '#6b3fa0', bg: '#f0eafe', type: 'Traditional' },
-  'ST_JUDE':       { label: 'St. Jude',       price:  99000, color: '#1e8a7a', bg: '#e0f5f2', type: 'Cremation'   },
-  'ST_JAMES':      { label: 'St. James',      price:  66000, color: '#a32d2d', bg: '#f9e5e5', type: 'Cremation'   },
+  'ST_ANNE_5Y':       { label: 'St. Anne',              term: '5-Year', price: 157500, color: '#1a5fa8', bg: '#e3f0fe', type: 'Traditional' },
+  'ST_BERNADETTE_5Y': { label: 'St. Bernadette',        term: '5-Year', price: 125000, color: '#3b6d11', bg: '#eaf3de', type: 'Traditional' },
+  'ST_CLAIRE_5Y':     { label: 'St. Claire',            term: '5-Year', price:  98500, color: '#905c0a', bg: '#fdf0dc', type: 'Traditional' },
+  'ST_DOMINIQUE_5Y':  { label: 'St. Dominique',         term: '5-Year', price:  67500, color: '#b35a1f', bg: '#fff0e5', type: 'Traditional' },
+  'ST_GREGORY_5Y':    { label: 'St. Gregory',           term: '5-Year', price:  57000, color: '#6b3fa0', bg: '#f0eafe', type: 'Traditional' },
+  'ST_GEORGE_5Y':     { label: 'St. George',            term: '5-Year', price:  53000, color: '#5c6f1b', bg: '#f0f4df', type: 'Traditional' },
+  'ST_GREGORY_7Y':    { label: 'St. Gregory',           term: '7-Year', price:  62000, color: '#c23b75', bg: '#fde8f2', type: 'Traditional' },
+  'ST_GEORGE_7Y':     { label: 'St. George',            term: '7-Year', price:  57000, color: '#9b2c59', bg: '#fbe5ef', type: 'Traditional' },
+  'ST_JUDE_5Y':       { label: 'St. Jude Cremation',    term: '5-Year', price:  99000, color: '#1e8a7a', bg: '#e0f5f2', type: 'Cremation'   },
+  'ST_JAMES_5Y':      { label: 'St. James Cremation',   term: '5-Year', price:  66000, color: '#a32d2d', bg: '#f9e5e5', type: 'Cremation'   },
 };
 const PLAN_KEYS = Object.keys(PLANS);
 // Legacy compat
@@ -1811,22 +1819,38 @@ function renderTable() {
 //  SALES DETAIL POPUP  (multiple sales per agent/week)
 // ──────────────────────────────────────────────────────────────
 
-// Amount lookup from the flyer. Full Payment uses the contract price.
+// Amount lookup from the updated full flyer. Full Payment uses the contract price.
 const PLAN_PRICES = {
-  ST_ANNE:       { 'Full Payment':157500, Annual:31500, 'Semi-Annual':16695, Quarterly:8660, Monthly:3000 },
-  ST_BERNADETTE: { 'Full Payment':125000, Annual:25000, 'Semi-Annual':13250, Quarterly:6875, Monthly:2375 },
-  ST_CLAIRE:     { 'Full Payment': 98500, Annual:19700, 'Semi-Annual':10440, Quarterly:5420, Monthly:1870 },
-  ST_GREGORY:    { 'Full Payment': 57000, Annual:11400, 'Semi-Annual': 6040, Quarterly:3135, Monthly:1100 },
-  ST_JUDE:       { 'Full Payment': 99000, Annual:19800, 'Semi-Annual':10495, Quarterly:5445, Monthly:1880 },
-  ST_JAMES:      { 'Full Payment': 66000, Annual:13200, 'Semi-Annual': 6995, Quarterly:3630, Monthly:1255 },
+  ST_ANNE_5Y:       { 'Full Payment':157500, Annual:31500, 'Semi-Annual':16695, Quarterly:8660, Monthly:3000 },
+  ST_BERNADETTE_5Y: { 'Full Payment':125000, Annual:25000, 'Semi-Annual':13250, Quarterly:6875, Monthly:2375 },
+  ST_CLAIRE_5Y:     { 'Full Payment': 98500, Annual:19700, 'Semi-Annual':10440, Quarterly:5420, Monthly:1870 },
+  ST_DOMINIQUE_5Y:  { 'Full Payment': 67500, Annual:13500, 'Semi-Annual': 7155, Quarterly:3710, Monthly:1285 },
+  ST_GREGORY_5Y:    { 'Full Payment': 57000, Annual:11400, 'Semi-Annual': 6040, Quarterly:3135, Monthly:1100 },
+  ST_GEORGE_5Y:     { 'Full Payment': 53000, Annual:10600, 'Semi-Annual': 5620, Quarterly:2915, Monthly:1000 },
+  ST_GREGORY_7Y:    { 'Full Payment': 62000, Annual: 8860, 'Semi-Annual': 4695, Quarterly:2435, Monthly: 850 },
+  ST_GEORGE_7Y:     { 'Full Payment': 57000, Annual: 8145, 'Semi-Annual': 4315, Quarterly:2240, Monthly: 775 },
+  ST_JUDE_5Y:       { 'Full Payment': 99000, Annual:19800, 'Semi-Annual':10495, Quarterly:5445, Monthly:1880 },
+  ST_JAMES_5Y:      { 'Full Payment': 66000, Annual:13200, 'Semi-Annual': 6995, Quarterly:3630, Monthly:1255 },
 };
 const FREQUENCIES = ['Full Payment','Annual','Semi-Annual','Quarterly','Monthly'];
 
 let detailContext = null; // { agent, week: 0-4 | 'total' }
 let detailDraftSales = [];
 
+function normalizePlanKey(planKey) {
+  const legacyMap = {
+    ST_ANNE: 'ST_ANNE_5Y',
+    ST_BERNADETTE: 'ST_BERNADETTE_5Y',
+    ST_CLAIRE: 'ST_CLAIRE_5Y',
+    ST_GREGORY: 'ST_GREGORY_5Y',
+    ST_JUDE: 'ST_JUDE_5Y',
+    ST_JAMES: 'ST_JAMES_5Y'
+  };
+  return legacyMap[planKey] || planKey;
+}
+
 function lookupAmount(planKey, freq) {
-  return PLAN_PRICES[planKey]?.[freq] || 0;
+  return PLAN_PRICES[normalizePlanKey(planKey)]?.[freq] || 0;
 }
 
 function migrateEntry(entry) {
@@ -1895,9 +1919,9 @@ function renderDetailSalesList() {
     return;
   }
   list.innerHTML = detailDraftSales.map((sale, i) => {
-    const info = PLANS[sale.plan] || { label: 'Unknown Plan' };
+    const info = PLANS[normalizePlanKey(sale.plan)] || { label: 'Unknown Plan' };
     return `<div class="sale-line">
-      <div><div class="sale-line-main">${i+1}. ${info.label}</div><div class="sale-line-sub">${sale.freq}</div></div>
+      <div><div class="sale-line-main">${i+1}. ${info.label}${info.term ? ' (' + info.term + ')' : ''}</div><div class="sale-line-sub">${sale.freq}</div></div>
       <div class="sale-line-amount">₱${(Number(sale.amount)||0).toLocaleString()}</div>
       <button class="sale-remove" data-index="${i}" title="Remove sale">×</button>
     </div>`;
