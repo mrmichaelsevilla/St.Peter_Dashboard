@@ -662,6 +662,48 @@
 
   .week-input-item input:focus { border-color: var(--mid-green); background: var(--pale-green); }
 
+
+  .sale-entry-panel {
+    background: var(--off-white);
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .sale-entry-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+  .btn-add-sale { width: 100%; justify-content: center; margin-top: 6px; }
+  .sales-list {
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .sale-line {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+    background: var(--white);
+  }
+  .sale-line:last-child { border-bottom: none; }
+  .sale-line-main { font-weight: 700; color: var(--dark-green); }
+  .sale-line-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .sale-line-amount { font-weight: 800; color: var(--dark-green); white-space: nowrap; }
+  .sale-remove {
+    border: none; background: #fde8e8; color: var(--danger);
+    border-radius: 8px; padding: 5px 8px; cursor: pointer; font-weight: 800;
+  }
+  .amount-breakdown {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    font-size: 12px; color: rgba(255,255,255,0.9); margin-top: 8px;
+  }
+  .amount-breakdown strong { display:block; color: var(--gold-light); font-size: 11px; text-transform: uppercase; letter-spacing:.6px; }
+
   .modal-actions {
     display: flex;
     gap: 10px;
@@ -1562,13 +1604,13 @@
     <div class="form-group">
       <label class="form-label">Plan Type</label>
       <select class="form-select" id="modal-plan">
-        <option value="">— Select plan type —</option>
-        <option value="ST_ANNE">St. Anne (₱157,500)</option>
-        <option value="ST_BERNADETTE">St. Bernadette (₱125,000)</option>
-        <option value="ST_CLAIRE">St. Claire (₱98,500)</option>
-        <option value="ST_GREGORY">St. Gregory (₱57,000)</option>
-        <option value="ST_JUDE">St. Jude (₱99,000)</option>
-        <option value="ST_JAMES">St. James (₱66,000)</option>
+        <option value="">— Select default plan type —</option>
+        <option value="ST_ANNE">St. Anne — ₱157,500</option>
+        <option value="ST_BERNADETTE">St. Bernadette — ₱125,000</option>
+        <option value="ST_CLAIRE">St. Claire — ₱98,500</option>
+        <option value="ST_GREGORY">St. Gregory — ₱57,000</option>
+        <option value="ST_JUDE">St. Jude — ₱99,000</option>
+        <option value="ST_JAMES">St. James — ₱66,000</option>
       </select>
     </div>
 
@@ -1592,43 +1634,48 @@
 
 <!-- SALES DETAIL POPUP -->
 <div class="modal-overlay" id="detail-overlay" style="display:none;">
-  <div class="modal" style="width:440px;">
+  <div class="modal" style="width:520px;">
     <div class="modal-title" id="detail-title">Sales Details</div>
     <div class="modal-sub" id="detail-sub">Breakdown for the selected entry.</div>
 
-    <div class="form-group">
-      <label class="form-label">Plan Type</label>
-      <select class="form-select" id="detail-plan">
-        <option value="">— Select plan type —</option>
-        <option value="ST_ANNE">St. Anne — ₱157,500 (Traditional)</option>
-        <option value="ST_BERNADETTE">St. Bernadette — ₱125,000 (Traditional)</option>
-        <option value="ST_CLAIRE">St. Claire — ₱98,500 (Traditional)</option>
-        <option value="ST_GREGORY">St. Gregory — ₱57,000 (Traditional)</option>
-        <option value="ST_JUDE">St. Jude — ₱99,000 (Cremation)</option>
-        <option value="ST_JAMES">St. James — ₱66,000 (Cremation)</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Frequency</label>
-      <select class="form-select" id="detail-frequency">
-        <option value="Monthly">Monthly</option>
-        <option value="Semi-Annual">Semi-Annual</option>
-        <option value="Annual">Annual</option>
-        <option value="Full Payment" selected>Full Payment</option>
-      </select>
+    <div class="sale-entry-panel" id="detail-entry-panel">
+      <div class="sale-entry-grid">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Plan Type</label>
+          <select class="form-select" id="detail-plan">
+            <option value="">— Select plan type —</option>
+            <option value="ST_ANNE">St. Anne — ₱157,500</option>
+            <option value="ST_BERNADETTE">St. Bernadette — ₱125,000</option>
+            <option value="ST_CLAIRE">St. Claire — ₱98,500</option>
+            <option value="ST_GREGORY">St. Gregory — ₱57,000</option>
+            <option value="ST_JUDE">St. Jude — ₱99,000</option>
+            <option value="ST_JAMES">St. James — ₱66,000</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Frequency</label>
+          <select class="form-select" id="detail-frequency">
+            <option value="Full Payment" selected>Full Payment</option>
+            <option value="Annual">Annual</option>
+            <option value="Semi-Annual">Semi-Annual</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-gold btn-add-sale" id="btn-detail-add-sale">＋ Add This Sale</button>
     </div>
 
     <div class="detail-amount">
-      <div class="lbl">Amount Collected</div>
+      <div class="lbl">Tracked Sales & Amount</div>
       <div class="val" id="detail-amount-val">₱0</div>
-      <div class="note" id="detail-amount-note"></div>
+      <div class="note" id="detail-amount-note">Add one or more sales using the plan and payment frequency above.</div>
+      <div class="amount-breakdown">
+        <span><strong>Sales Count</strong><span id="detail-salesnum">0</span></span>
+        <span><strong>Selected Price</strong><span id="detail-price">—</span></span>
+      </div>
     </div>
 
-    <div class="detail-row">
-      <span class="dl">Sales #</span>
-      <span class="dv"><span class="detail-sales-num" id="detail-salesnum">0</span></span>
-    </div>
     <div class="detail-row">
       <span class="dl">Agent</span>
       <span class="dv" id="detail-agent">—</span>
@@ -1637,14 +1684,12 @@
       <span class="dl" id="detail-period-label">Period</span>
       <span class="dv" id="detail-period">—</span>
     </div>
-    <div class="detail-row">
-      <span class="dl">Contract Price (per plan)</span>
-      <span class="dv" id="detail-price">—</span>
-    </div>
+
+    <div class="sales-list" id="detail-sales-list"></div>
 
     <div class="modal-actions">
       <button class="btn-outline" id="btn-detail-close">Close</button>
-      <button class="btn-primary" id="btn-detail-save">💾 Save Plan & Frequency</button>
+      <button class="btn-primary" id="btn-detail-save">💾 Save Weekly Sales</button>
     </div>
   </div>
 </div>
@@ -1706,11 +1751,11 @@ function saveData() {
 
 function getMonthData(m) { return salesData[m] || {}; }
 
-function agentTotal(entry) { return entry ? entry.weeks.reduce((a,b)=>a+b,0) : 0; }
+function agentTotal(entry) { return entry ? entryWeeks(entry).reduce((a,b)=>a+b,0) : 0; }
 
 function allAgentTotals(m) {
   const data = getMonthData(m);
-  return AGENTS.map(a => ({ name: a, total: agentTotal(data[a]), plan: data[a]?.plan || '', weeks: data[a]?.weeks || [0,0,0,0,0] }))
+  return AGENTS.map(a => { const e = data[a] ? migrateEntry(data[a]) : null; return { name: a, total: agentTotal(e), amount: entryAmount(e), plan: e?.plan || '', weeks: e?.weeks || [0,0,0,0,0], sales: e?.sales || [[],[],[],[],[]] }; })
     .sort((a,b) => b.total - a.total);
 }
 
@@ -1763,89 +1808,125 @@ function renderTable() {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  SALES DETAIL POPUP  (click a week number or TOTAL)
+//  SALES DETAIL POPUP  (multiple sales per agent/week)
 // ──────────────────────────────────────────────────────────────
 
-// How much is collected per plan, per single installment, by frequency.
-// Full Payment = whole contract price collected at once.
-// Monthly / Semi-Annual / Annual = one installment amount (contract price ÷ installments over a 5-yr term).
-const FREQ_INSTALLMENTS = {
-  'Monthly':      60,   // 5 years × 12
-  'Semi-Annual':  10,   // 5 years × 2
-  'Annual':        5,   // 5 years × 1
-  'Full Payment':  1,   // paid in full
+// Amount lookup from the flyer. Full Payment uses the contract price.
+const PLAN_PRICES = {
+  ST_ANNE:       { 'Full Payment':157500, Annual:31500, 'Semi-Annual':16695, Quarterly:8660, Monthly:3000 },
+  ST_BERNADETTE: { 'Full Payment':125000, Annual:25000, 'Semi-Annual':13250, Quarterly:6875, Monthly:2375 },
+  ST_CLAIRE:     { 'Full Payment': 98500, Annual:19700, 'Semi-Annual':10440, Quarterly:5420, Monthly:1870 },
+  ST_GREGORY:    { 'Full Payment': 57000, Annual:11400, 'Semi-Annual': 6040, Quarterly:3135, Monthly:1100 },
+  ST_JUDE:       { 'Full Payment': 99000, Annual:19800, 'Semi-Annual':10495, Quarterly:5445, Monthly:1880 },
+  ST_JAMES:      { 'Full Payment': 66000, Annual:13200, 'Semi-Annual': 6995, Quarterly:3630, Monthly:1255 },
 };
+const FREQUENCIES = ['Full Payment','Annual','Semi-Annual','Quarterly','Monthly'];
 
 let detailContext = null; // { agent, week: 0-4 | 'total' }
+let detailDraftSales = [];
 
-function frequencyAmount(planKey, units, freq) {
-  const info = PLANS[planKey];
-  if (!info) return 0;
-  const installments = FREQ_INSTALLMENTS[freq] || 1;
-  const perPlan = info.price / installments;
-  return Math.round(perPlan * units);
+function lookupAmount(planKey, freq) {
+  return PLAN_PRICES[planKey]?.[freq] || 0;
 }
 
-function recalcDetailAmount() {
-  if (!detailContext) return;
+function migrateEntry(entry) {
+  if (!entry) return { plan: '', freq: 'Full Payment', weeks: [0,0,0,0,0], sales: [[],[],[],[],[]] };
+  if (Array.isArray(entry.sales)) {
+    entry.sales = [0,1,2,3,4].map(i => Array.isArray(entry.sales[i]) ? entry.sales[i] : []);
+    entry.weeks = entry.sales.map(x => x.length);
+    return entry;
+  }
+  const plan = entry.plan || '';
+  const freq = entry.freq || 'Full Payment';
+  const weeks = Array.isArray(entry.weeks) ? entry.weeks : [0,0,0,0,0];
+  const sales = weeks.map(count => Array.from({length: Math.max(0, Number(count)||0)}, () => ({
+    plan, freq, amount: lookupAmount(plan, freq)
+  })).filter(x => x.plan));
+  return { ...entry, plan, freq, weeks: sales.map(x => x.length), sales };
+}
+
+function getEntry(month, agent) {
+  const raw = (salesData[month] || {})[agent];
+  return migrateEntry(raw);
+}
+
+function entryWeeks(entry) {
+  const e = migrateEntry(entry);
+  return e.weeks || [0,0,0,0,0];
+}
+
+function entryAmount(entry) {
+  const e = migrateEntry(entry);
+  return (e.sales || []).flat().reduce((s, sale) => s + (Number(sale.amount) || lookupAmount(sale.plan, sale.freq)), 0);
+}
+
+function weekAmount(entry, week) {
+  const e = migrateEntry(entry);
+  if (week === 'total') return entryAmount(e);
+  return (e.sales?.[week] || []).reduce((s, sale) => s + (Number(sale.amount) || lookupAmount(sale.plan, sale.freq)), 0);
+}
+
+function saveEntry(month, agent, entry) {
+  if (!salesData[month]) salesData[month] = {};
+  const e = migrateEntry(entry);
+  e.weeks = e.sales.map(x => x.length);
+  salesData[month][agent] = e;
+}
+
+function selectedSalePreview() {
   const planKey = document.getElementById('detail-plan').value;
   const freq = document.getElementById('detail-frequency').value;
-  const data = getMonthData(currentMonth);
-  const entry = data[detailContext.agent];
-  const weeks = entry?.weeks || [0,0,0,0,0];
-  const units = detailContext.week === 'total'
-    ? weeks.reduce((a,b)=>a+b,0)
-    : (weeks[detailContext.week] || 0);
+  const priceEl = document.getElementById('detail-price');
+  if (!planKey) { priceEl.textContent = '—'; return; }
+  priceEl.textContent = '₱' + lookupAmount(planKey, freq).toLocaleString();
+}
 
-  const amountEl = document.getElementById('detail-amount-val');
-  const noteEl   = document.getElementById('detail-amount-note');
-  const priceEl  = document.getElementById('detail-price');
+function renderDetailSalesList() {
+  const list = document.getElementById('detail-sales-list');
+  const totalAmount = detailDraftSales.reduce((s, sale) => s + (Number(sale.amount)||0), 0);
+  document.getElementById('detail-salesnum').textContent = detailDraftSales.length;
+  document.getElementById('detail-amount-val').textContent = '₱' + totalAmount.toLocaleString();
+  document.getElementById('detail-amount-note').textContent = detailDraftSales.length
+    ? `${detailDraftSales.length} sale(s) tracked for this ${detailContext?.week === 'total' ? 'month' : 'week'}. Amount is based on the flyer payment table.`
+    : 'Add one or more sales using the plan and payment frequency above.';
 
-  if (!planKey) {
-    amountEl.textContent = '₱0';
-    noteEl.textContent = 'Select a plan type to compute the amount.';
-    priceEl.textContent = '—';
+  if (!detailDraftSales.length) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--white);">No sales added yet for this week.</div>';
     return;
   }
-  const info = PLANS[planKey];
-  const amount = frequencyAmount(planKey, units, freq);
-  amountEl.textContent = '₱' + amount.toLocaleString();
-  priceEl.textContent = '₱' + info.price.toLocaleString();
-  if (freq === 'Full Payment') {
-    noteEl.textContent = `${units} sale(s) × ₱${info.price.toLocaleString()} (paid in full)`;
-  } else {
-    const inst = FREQ_INSTALLMENTS[freq];
-    const perPlan = Math.round(info.price / inst);
-    noteEl.textContent = `${units} sale(s) × ₱${perPlan.toLocaleString()} per ${freq.toLowerCase()} installment`;
-  }
+  list.innerHTML = detailDraftSales.map((sale, i) => {
+    const info = PLANS[sale.plan] || { label: 'Unknown Plan' };
+    return `<div class="sale-line">
+      <div><div class="sale-line-main">${i+1}. ${info.label}</div><div class="sale-line-sub">${sale.freq}</div></div>
+      <div class="sale-line-amount">₱${(Number(sale.amount)||0).toLocaleString()}</div>
+      <button class="sale-remove" data-index="${i}" title="Remove sale">×</button>
+    </div>`;
+  }).join('');
 }
 
 function openDetailPopup(agentName, week) {
   detailContext = { agent: agentName, week };
-  const data = getMonthData(currentMonth);
-  const entry = data[agentName];
-  const weeks = entry?.weeks || [0,0,0,0,0];
-  const units = week === 'total' ? weeks.reduce((a,b)=>a+b,0) : (weeks[week] || 0);
-
-  // Title + period label
+  const entry = getEntry(currentMonth, agentName);
   const isTotal = week === 'total';
-  document.getElementById('detail-title').textContent = isTotal
-    ? '📊 Monthly Sales Summary'
-    : '🧾 Weekly Sales Detail';
+
+  document.getElementById('detail-title').textContent = isTotal ? '📊 Monthly Sales Summary' : '🧾 Weekly Sales Detail';
   document.getElementById('detail-sub').textContent = isTotal
     ? `${agentName} — total for ${MONTHS[currentMonth]}`
     : `${agentName} — Week ${week + 1} of ${MONTHS[currentMonth]}`;
-
   document.getElementById('detail-agent').textContent = agentName;
   document.getElementById('detail-period-label').textContent = isTotal ? 'Month' : 'Week';
   document.getElementById('detail-period').textContent = isTotal ? MONTHS[currentMonth] : `Week ${week + 1}`;
-  document.getElementById('detail-salesnum').textContent = units;
 
-  // Pre-fill plan + frequency from saved entry (frequency defaults to Full Payment)
-  document.getElementById('detail-plan').value = entry?.plan || '';
-  document.getElementById('detail-frequency').value = entry?.freq || 'Full Payment';
+  document.getElementById('detail-plan').value = entry.plan || '';
+  document.getElementById('detail-frequency').value = entry.freq || 'Full Payment';
+  document.getElementById('detail-entry-panel').style.display = isTotal ? 'none' : 'block';
 
-  recalcDetailAmount();
+  detailDraftSales = isTotal
+    ? (entry.sales || []).flat().map(s => ({...s}))
+    : (entry.sales?.[week] || []).map(s => ({...s}));
+
+  selectedSalePreview();
+  renderDetailSalesList();
   document.getElementById('detail-overlay').style.display = 'flex';
 }
 
@@ -1858,9 +1939,23 @@ document.getElementById('table-body').addEventListener('click', function(e) {
   openDetailPopup(agent, wk === 'total' ? 'total' : parseInt(wk));
 });
 
-// Recompute amount when plan or frequency changes
-document.getElementById('detail-plan').addEventListener('change', recalcDetailAmount);
-document.getElementById('detail-frequency').addEventListener('change', recalcDetailAmount);
+document.getElementById('detail-plan').addEventListener('change', selectedSalePreview);
+document.getElementById('detail-frequency').addEventListener('change', selectedSalePreview);
+
+document.getElementById('btn-detail-add-sale').addEventListener('click', () => {
+  const plan = document.getElementById('detail-plan').value;
+  const freq = document.getElementById('detail-frequency').value;
+  if (!plan) { showToast('⚠️ Please select a plan type first.'); return; }
+  detailDraftSales.push({ plan, freq, amount: lookupAmount(plan, freq) });
+  renderDetailSalesList();
+});
+
+document.getElementById('detail-sales-list').addEventListener('click', (e) => {
+  const btn = e.target.closest('.sale-remove');
+  if (!btn || detailContext?.week === 'total') return;
+  detailDraftSales.splice(parseInt(btn.dataset.index), 1);
+  renderDetailSalesList();
+});
 
 // Close
 document.getElementById('btn-detail-close').addEventListener('click', () => {
@@ -1870,22 +1965,20 @@ document.getElementById('detail-overlay').addEventListener('click', function(e) 
   if (e.target === this) this.style.display = 'none';
 });
 
-// Save plan + frequency back to the entry
+// Save all weekly sales back to the entry
 document.getElementById('btn-detail-save').addEventListener('click', () => {
-  if (!detailContext) return;
+  if (!detailContext || detailContext.week === 'total') { document.getElementById('detail-overlay').style.display = 'none'; return; }
   const agent = detailContext.agent;
-  const planKey = document.getElementById('detail-plan').value;
-  const freq = document.getElementById('detail-frequency').value;
-
-  if (!salesData[currentMonth]) salesData[currentMonth] = {};
-  const existing = salesData[currentMonth][agent] || { plan: '', weeks: [0,0,0,0,0] };
-  existing.plan = planKey;
-  existing.freq = freq;
-  salesData[currentMonth][agent] = existing;
+  const entry = getEntry(currentMonth, agent);
+  entry.sales[detailContext.week] = detailDraftSales.map(s => ({...s}));
+  entry.weeks = entry.sales.map(x => x.length);
+  entry.plan = document.getElementById('detail-plan').value || entry.sales.flat().slice(-1)[0]?.plan || '';
+  entry.freq = document.getElementById('detail-frequency').value || entry.sales.flat().slice(-1)[0]?.freq || 'Full Payment';
+  saveEntry(currentMonth, agent, entry);
   saveData();
 
   document.getElementById('detail-overlay').style.display = 'none';
-  showToast(`✅ Updated ${agent.split(' ')[0]} — ${planKey ? PLANS[planKey].label : 'no plan'} · ${freq}`);
+  showToast(`✅ Saved ${entry.weeks[detailContext.week]} sale(s) for ${agent.split(' ')[0]} — ₱${weekAmount(entry, detailContext.week).toLocaleString()}`);
   refresh();
 });
 
@@ -1904,6 +1997,8 @@ function updateKPIs() {
   document.getElementById('kpi-top-sales').textContent = (top && top.total > 0 ? top.total : 0) + ' sales';
   document.getElementById('kpi-active').textContent = active;
   document.getElementById('kpi-active-pct').textContent = `of ${AGENTS.length} agents`;
+  const totalAmount = sorted.reduce((s,a) => s + (a.amount || 0), 0);
+  document.querySelector('#kpi-total').nextElementSibling.textContent = `Amount tracked: ₱${totalAmount.toLocaleString()}`;
 
   // plan type counts
   const planCountKPI = {};
@@ -1966,7 +2061,7 @@ function renderCharts() {
   pieChart = new Chart(pieCtx, {
     type: 'doughnut',
     data: {
-      labels: pieLabels.map(k => `Plan ${k}`),
+      labels: pieLabels,
       datasets: [{ data: pieData, backgroundColor: pieColors, borderWidth: 3, borderColor: '#fff' }]
     },
     options: {
@@ -2131,8 +2226,9 @@ function prefillModal() {
   const month = parseInt(document.getElementById('modal-month').value);
   const entry = (salesData[month] || {})[agent];
   if (entry) {
-    document.getElementById('modal-plan').value = entry.plan || '';
-    entry.weeks.forEach((w, i) => { document.getElementById(`w${i+1}`).value = w; });
+    const e = migrateEntry(entry);
+    document.getElementById('modal-plan').value = e.plan || '';
+    e.weeks.forEach((w, i) => { document.getElementById(`w${i+1}`).value = w; });
   } else {
     document.getElementById('modal-plan').value = '';
     ['w1','w2','w3','w4','w5'].forEach(id => document.getElementById(id).value = 0);
@@ -2154,9 +2250,15 @@ document.getElementById('btn-modal-save').addEventListener('click', () => {
   const plan = document.getElementById('modal-plan').value;
   const weeks = ['w1','w2','w3','w4','w5'].map(id => Math.max(0, parseInt(document.getElementById(id).value) || 0));
 
-  if (!salesData[month]) salesData[month] = {};
-  const prevFreq = (salesData[month][agent] || {}).freq;
-  salesData[month][agent] = { plan, weeks, ...(prevFreq ? { freq: prevFreq } : {}) };
+  const prev = getEntry(month, agent);
+  const freq = prev.freq || 'Full Payment';
+  const sales = weeks.map((count, wi) => {
+    const existing = prev.sales?.[wi] || [];
+    const kept = existing.slice(0, count);
+    while (kept.length < count) kept.push({ plan, freq, amount: lookupAmount(plan, freq) });
+    return kept.map(s => ({ plan: s.plan || plan, freq: s.freq || freq, amount: s.amount || lookupAmount(s.plan || plan, s.freq || freq) }));
+  });
+  saveEntry(month, agent, { plan, freq, weeks, sales });
   saveData();
 
   document.getElementById('modal-overlay').style.display = 'none';
